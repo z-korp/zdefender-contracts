@@ -28,7 +28,7 @@ const NAME: felt252 = 'NAME';
 
 #[test]
 #[available_gas(1_000_000_000)]
-fn test_sell() {
+fn test_run() {
     // [Setup]
     let (world, systems) = setup::spawn_game();
     let mut store = StoreTrait::new(world);
@@ -40,18 +40,9 @@ fn test_sell() {
     let mut map = MapTrait::from(2, 3);
     systems.player_actions.build(world, ACCOUNT, map.x(), map.y(), TowerCategory::Barbarian);
 
-    // [Upgrade]
+    // [Upgrade] 
     systems.player_actions.upgrade(world, ACCOUNT, 0);
 
-    // [Sell]
-    systems.player_actions.sell(world, ACCOUNT, 0);
-
-    // [Assert] Game
-    let game: Game = store.game(ACCOUNT);
-    let gold = TOWER_SELL_RATIO_NUM * 2 * TOWER_BARBARIAN_COST / TOWER_SELL_RATIO_DEN;
-    assert(game.gold == gold, 'Game: wrong gold');
-
-    // [Assert] Tower
-    let tower: Tower = store.tower(game, 0);
-    assert(tower.level == 0, 'Tower: wrong level');
+    // [Run]
+    systems.player_actions.run(world, ACCOUNT);
 }

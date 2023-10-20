@@ -33,16 +33,13 @@ fn test_build() {
     // [Create]
     systems.player_actions.create(world, ACCOUNT, SEED, NAME);
 
-    // [Build] Tower
-    let game: Game = store.game(ACCOUNT);
-    let gold = game.gold;
+    // [Build]
     let mut map = MapTrait::from(2, 3);
     systems.player_actions.build(world, ACCOUNT, map.x(), map.y(), TowerCategory::Barbarian);
 
     // [Assert] Game
     let game: Game = store.game(ACCOUNT);
-    assert(game.gold == gold - TOWER_BARBARIAN_COST, 'Game: wrong gold');
-    let gold = game.gold;
+    assert(game.gold == GAME_INITIAL_GOLD - TOWER_BARBARIAN_COST, 'Game: wrong gold');
 
     // [Assert] Tower
     let tower: Tower = store.tower(game, 0);

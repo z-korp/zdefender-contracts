@@ -33,18 +33,16 @@ fn test_upgrade() {
     // [Create]
     systems.player_actions.create(world, ACCOUNT, SEED, NAME);
 
-    // [Build] Tower
-    let game: Game = store.game(ACCOUNT);
-    let gold = game.gold;
+    // [Build]
     let mut map = MapTrait::from(2, 3);
     systems.player_actions.build(world, ACCOUNT, map.x(), map.y(), TowerCategory::Barbarian);
 
-    // [Build] Upgrade
+    // [Upgrade]
     systems.player_actions.upgrade(world, ACCOUNT, 0);
 
     // [Assert] Game
     let game: Game = store.game(ACCOUNT);
-    assert(game.gold == gold - 2 * TOWER_BARBARIAN_COST, 'Game: wrong gold');
+    assert(game.gold == GAME_INITIAL_GOLD - 2 * TOWER_BARBARIAN_COST, 'Game: wrong gold');
 
     // [Assert] Tower
     let tower: Tower = store.tower(game, 0);
