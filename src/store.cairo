@@ -8,11 +8,7 @@ use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
 use zdefender::models::game::{Game, GameTrait};
 use zdefender::models::mob::{Mob, MobTrait};
-use zdefender::models::tile::{Tile, TileTrait};
-
-// Internal imports
-
-use zdefender::config;
+use zdefender::models::tower::{Tower, TowerTrait};
 
 /// Store struct.
 #[derive(Drop)]
@@ -26,13 +22,14 @@ trait StoreTrait {
     fn game(ref self: Store, key: felt252) -> Game;
     fn mob(ref self: Store, game: Game, id: u32) -> Mob;
     fn mobs(ref self: Store, game: Game) -> Span<Mob>;
-    fn tile(ref self: Store, game: Game, index: u32) -> Tile;
-    fn tiles(ref self: Store, game: Game) -> Span<Tile>;
+    fn tower(ref self: Store, game: Game, id: u32) -> Tower;
+    fn towers(ref self: Store, game: Game) -> Span<Tower>;
+    fn is_tower(ref self: Store, game: Game, index: u32) -> bool;
     fn set_game(ref self: Store, game: Game);
     fn set_mob(ref self: Store, mob: Mob);
     fn set_mobs(ref self: Store, mobs: Span<Mob>);
-    fn set_tile(ref self: Store, tile: Tile);
-    fn set_tiles(ref self: Store, tiles: Span<Tile>);
+    fn set_tower(ref self: Store, tower: Tower);
+    fn set_towers(ref self: Store, towers: Span<Tower>);
 }
 
 /// Implementation of the `StoreTrait` trait for the `Store` struct.
@@ -63,22 +60,39 @@ impl StoreImpl of StoreTrait {
         mobs.span()
     }
 
-    fn tile(ref self: Store, game: Game, index: u32) -> Tile {
-        let tile_key = (game.id, index);
-        get!(self.world, tile_key.into(), (Tile))
+    fn tower(ref self: Store, game: Game, id: u32) -> Tower {
+        let tower_key = (game.id, id);
+        get!(self.world, tower_key.into(), (Tower))
     }
 
-    fn tiles(ref self: Store, game: Game) -> Span<Tile> {
-        let mut index = config::TILE_COUNT;
-        let mut tiles: Array<Tile> = array![];
+    fn towers(ref self: Store, game: Game) -> Span<Tower> {
+        let mut index: u32 = game.tower_count.into();
+        let mut towers: Array<Tower> = array![];
         loop {
             if index == 0 {
                 break;
             };
             index -= 1;
-            tiles.append(self.tile(game, index));
+            let tower = self.tower(game, index);
+            if tower.id != 0 {
+                towers.append(tower);
+            };
         };
-        tiles.span()
+        towers.span()
+    }
+
+    fn is_tower(ref self: Store, game: Game, index: u32) -> bool {
+        let mut index: u32 = game.tower_count.into();
+        loop {
+            if index == 0 {
+                break false;
+            };
+            index -= 1;
+            let tower = self.tower(game, index);
+            if tower.index == index {
+                break true;
+            };
+        }
     }
 
     fn set_game(ref self: Store, game: Game) {
@@ -100,14 +114,14 @@ impl StoreImpl of StoreTrait {
         };
     }
 
-    fn set_tile(ref self: Store, tile: Tile) {
-        set!(self.world, (tile));
+    fn set_tower(ref self: Store, tower: Tower) {
+        set!(self.world, (tower));
     }
 
-    fn set_tiles(ref self: Store, mut tiles: Span<Tile>) {
+    fn set_towers(ref self: Store, mut towers: Span<Tower>) {
         loop {
-            match tiles.pop_front() {
-                Option::Some(tile) => self.set_tile(*tile),
+            match towers.pop_front() {
+                Option::Some(tower) => self.set_tower(*tower),
                 Option::None => {
                     break;
                 },

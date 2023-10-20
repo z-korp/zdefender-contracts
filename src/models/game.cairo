@@ -35,7 +35,7 @@ impl GameImpl of GameTrait {
             mob_count: 0,
             mob_remaining: constants::GAME_INITIAL_MOB_COUNT,
             wave: 0,
-            gold: constants::GAME_INITIAL_MOB_COUNT,
+            gold: constants::GAME_INITIAL_GOLD,
         }
     }
 }

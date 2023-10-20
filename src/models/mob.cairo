@@ -2,7 +2,7 @@
 
 // Internal imports
 
-use zdefender::config;
+use zdefender::helpers::map;
 
 // Constants
 
@@ -52,6 +52,6 @@ impl MobImpl of MobTrait {
                 (MOB_BOSS_HEALTH, MOB_BOSS_SPEED, MOB_BOSS_DEFENCE)
             },
         };
-        Mob { game_id, id, index: config::SPAWN_INDEX, health, speed, defence, }
+        Mob { game_id, id, index: map::SPAWN_INDEX, health, speed, defence, }
     }
 }

@@ -14,11 +14,25 @@ struct Map {
     index: u32,
 }
 
-#[generate_trait]
+trait MapTrait {
+    fn new() -> Map;
+    fn from(x: u32, y: u32) -> Map;
+    fn x(ref self: Map) -> u32;
+    fn y(ref self: Map) -> u32;
+    fn next(ref self: Map) -> u32;
+    fn is_idle(ref self: Map) -> bool;
+}
+
 impl MapImpl of MapTrait {
     #[inline(always)]
     fn new() -> Map {
         Map { index: SPAWN_INDEX, }
+    }
+
+    #[inline(always)]
+    fn from(x: u32, y: u32) -> Map {
+        let index = y * MAP_SIZE + x;
+        Map { index }
     }
 
     #[inline(always)]
@@ -78,6 +92,11 @@ impl MapImpl of MapTrait {
         } else { // Out of the map
             return TILE_COUNT;
         }
+    }
+
+    #[inline(always)]
+    fn is_idle(ref self: Map) -> bool {
+        return self.next() == TILE_COUNT;
     }
 }
 
