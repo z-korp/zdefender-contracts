@@ -47,6 +47,7 @@ trait MobTrait {
 }
 
 impl MobImpl of MobTrait {
+    #[inline(always)]
     fn new(game_id: u32, id: u32, category: Category) -> Mob {
         let (health, speed, defense, reward) = match category {
             Category::Normal => {

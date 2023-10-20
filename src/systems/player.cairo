@@ -98,6 +98,7 @@ mod actions {
 
     #[external(v0)]
     impl Actions of IActions<ContractState> {
+        #[inline(always)]
         fn create(
             self: @ContractState,
             world: IWorldDispatcher,
@@ -114,6 +115,7 @@ mod actions {
             store.set_game(game);
         }
 
+        #[inline(always)]
         fn build(
             self: @ContractState,
             world: IWorldDispatcher,
@@ -153,6 +155,7 @@ mod actions {
             store.set_game(game);
         }
 
+        #[inline(always)]
         fn upgrade(self: @ContractState, world: IWorldDispatcher, player: felt252, tower_id: u32,) {
             // [Setup] Datastore
             let mut store: Store = StoreTrait::new(world);
@@ -184,6 +187,7 @@ mod actions {
             store.set_game(game);
         }
 
+        #[inline(always)]
         fn sell(self: @ContractState, world: IWorldDispatcher, player: felt252, tower_id: u32,) {
             // [Setup] Datastore
             let mut store: Store = StoreTrait::new(world);
@@ -291,9 +295,9 @@ mod actions {
                                         store.set_mob(mob);
                                     };
                                     store.set_tower(tower);
-                                    let hit = Hit { tick, from: tower.id, to: mob.id, damage, };
 
                                     // [Event] Hit
+                                    let hit = Hit { tick, from: tower.id, to: mob.id, damage, };
                                     emit!(world, hit);
                                 };
                             },
@@ -305,21 +309,24 @@ mod actions {
                 };
 
                 // [Effect] Perform mob moves
-                let mut index: u32 = game.mob_count.into();
+                let mut mobs = store.mobs(game);
                 loop {
-                    if index == 0 {
-                        break;
-                    }
-                    index -= 1;
-                    let mut mob = store.mob(game, index);
-                    let status = mob.move();
-                    // [Check] Mob reached castle
-                    if status {
-                        game.take_damage();
-                        store.remove_mob(game, mob);
-                        game.mob_count -= 1;
-                    } else {
-                        store.set_mob(mob);
+                    match mobs.pop_front() {
+                        Option::Some(snap_mob) => {
+                            let mut mob = *snap_mob;
+                            let status = mob.move();
+                            // [Check] Mob reached castle
+                            if status {
+                                game.take_damage();
+                                store.remove_mob(game, mob);
+                                game.mob_count -= 1;
+                            } else {
+                                store.set_mob(mob);
+                            };
+                        },
+                        Option::None => {
+                            break;
+                        },
                     };
                 };
 

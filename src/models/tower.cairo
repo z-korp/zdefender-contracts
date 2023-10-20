@@ -82,6 +82,7 @@ trait TowerTrait {
 }
 
 impl TowerImpl of TowerTrait {
+    #[inline(always)]
     fn new(game_id: u32, id: u32, index: u32, category: Category) -> Tower {
         let (cooldown, attack, range, cost) = match category {
             Category::Barbarian => {
@@ -113,33 +114,40 @@ impl TowerImpl of TowerTrait {
         }
     }
 
+    #[inline(always)]
     fn is_barbarian(self: Tower) -> bool {
         self.category == Category::Barbarian.into()
     }
 
+    #[inline(always)]
     fn is_bowman(self: Tower) -> bool {
         self.category == Category::Bowman.into()
     }
 
+    #[inline(always)]
     fn is_wizard(self: Tower) -> bool {
         self.category == Category::Wizard.into()
     }
 
+    #[inline(always)]
     fn sell_cost(self: Tower) -> u16 {
         TOWER_SELL_RATIO_NUM * self.cost / TOWER_SELL_RATIO_DEN
     }
 
+    #[inline(always)]
     fn upgrade_cost(self: Tower) -> u16 {
         let cost = TowerTrait::build_cost(self.category.into());
         cost * self.level.into()
     }
 
+    #[inline(always)]
     fn upgrade(ref self: Tower) {
         self.cost += self.upgrade_cost();
         self.attack *= 2;
         self.level += 1;
     }
 
+    #[inline(always)]
     fn build_cost(category: Category) -> u16 {
         match category {
             Category::Barbarian => TOWER_BARBARIAN_COST,
@@ -148,6 +156,7 @@ impl TowerImpl of TowerTrait {
         }
     }
 
+    #[inline(always)]
     fn can_attack(self: Tower, mob: Mob) -> bool {
         let mut map = MapTrait::load(self.index);
         let (top, left, bottom, right) = map.box(self.range);
@@ -157,10 +166,12 @@ impl TowerImpl of TowerTrait {
         mob_x >= left && mob_x <= right && mob_y >= top && mob_y <= bottom
     }
 
+    #[inline(always)]
     fn is_frozen(self: Tower, tick: u32) -> bool {
         tick < self.freeze
     }
 
+    #[inline(always)]
     fn attack(ref self: Tower, ref mob: Mob, tick: u32) -> u32 {
         let damage = if self.attack > mob.defense {
             self.attack - mob.defense

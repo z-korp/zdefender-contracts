@@ -26,6 +26,7 @@ trait GameTrait {
 }
 
 impl GameImpl of GameTrait {
+    #[inline(always)]
     fn new(key: felt252, id: u32, seed: felt252, name: felt252) -> Game {
         Game {
             key: key,
@@ -42,6 +43,7 @@ impl GameImpl of GameTrait {
         }
     }
 
+    #[inline(always)]
     fn take_damage(ref self: Game) {
         self.health -= if self.health > 0 {
             1
