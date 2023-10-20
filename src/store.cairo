@@ -36,14 +36,17 @@ trait StoreTrait {
 
 /// Implementation of the `StoreTrait` trait for the `Store` struct.
 impl StoreImpl of StoreTrait {
+    #[inline(always)]
     fn new(world: IWorldDispatcher) -> Store {
         Store { world: world }
     }
 
+    #[inline(always)]
     fn game(ref self: Store, key: felt252) -> Game {
         get!(self.world, key, (Game))
     }
 
+    #[inline(always)]
     fn mob(ref self: Store, game: Game, id: u32) -> Mob {
         let mob_key = (game.id, id);
         get!(self.world, mob_key.into(), (Mob))
@@ -62,6 +65,7 @@ impl StoreImpl of StoreTrait {
         mobs.span()
     }
 
+    #[inline(always)]
     fn tower(ref self: Store, game: Game, id: u32) -> Tower {
         let tower_key = (game.id, id);
         get!(self.world, tower_key.into(), (Tower))
@@ -97,10 +101,12 @@ impl StoreImpl of StoreTrait {
         }
     }
 
+    #[inline(always)]
     fn set_game(ref self: Store, game: Game) {
         set!(self.world, (game));
     }
 
+    #[inline(always)]
     fn set_mob(ref self: Store, mob: Mob) {
         set!(self.world, (mob));
     }
@@ -116,6 +122,7 @@ impl StoreImpl of StoreTrait {
         };
     }
 
+    #[inline(always)]
     fn remove_mob(ref self: Store, game: Game, mob: Mob) {
         let last_mob_id: u32 = game.mob_count.into();
         // Skip if the mob id is the latest id
@@ -127,6 +134,7 @@ impl StoreImpl of StoreTrait {
         self.set_mob(last_mob);
     }
 
+    #[inline(always)]
     fn set_tower(ref self: Store, tower: Tower) {
         set!(self.world, (tower));
     }
@@ -142,6 +150,7 @@ impl StoreImpl of StoreTrait {
         };
     }
 
+    #[inline(always)]
     fn remove_tower(ref self: Store, game: Game, tower: Tower) {
         let last_tower_id: u32 = game.tower_count.into();
         // Skip if the tower id is the latest id
