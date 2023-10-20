@@ -276,7 +276,7 @@ mod actions {
 
                     index -= 1;
                     let mut tower = store.tower(game, index);
-                    if tower.is_frozen(tick) {
+                    if !tower.is_idle(tick) {
                         continue;
                     }
 
@@ -285,7 +285,7 @@ mod actions {
                         match mobs.pop_front() {
                             Option::Some(snap_mob) => {
                                 let mut mob = *snap_mob;
-                                if !tower.is_frozen(tick) && tower.can_attack(mob) {
+                                if tower.can_attack(mob, tick) {
                                     let damage = tower.attack(ref mob, tick);
                                     if mob.health == 0 {
                                         game.gold += mob.reward;

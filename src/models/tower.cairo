@@ -7,7 +7,7 @@ use zdefender::models::mob::{Mob, MobTrait};
 
 // Constants
 
-const TOWER_BARBARIAN_COOLDOWN: u32 = 1;
+const TOWER_BARBARIAN_COOLDOWN: u32 = 2;
 const TOWER_BARBARIAN_ATTACK: u32 = 100;
 const TOWER_BARBARIAN_RANGE: u32 = 1;
 const TOWER_BARBARIAN_COST: u16 = 50;
@@ -35,7 +35,8 @@ struct Tower {
     range: u32,
     level: u8,
     cost: u16,
-    freeze: u32,
+    idle: u32,
+    hit: u32,
 }
 
 #[derive(Serde, Copy, Drop, PartialEq)]
@@ -76,8 +77,9 @@ trait TowerTrait {
     fn upgrade_cost(self: Tower) -> u16;
     fn upgrade(ref self: Tower);
     fn build_cost(category: Category) -> u16;
-    fn can_attack(self: Tower, mob: Mob) -> bool;
-    fn is_frozen(self: Tower, tick: u32) -> bool;
+    fn can_attack(self: Tower, mob: Mob, tick: u32) -> bool;
+    fn in_range(self: Tower, mob: Mob) -> bool;
+    fn is_idle(self: Tower, tick: u32) -> bool;
     fn attack(ref self: Tower, ref mob: Mob, tick: u32) -> u32;
 }
 
@@ -110,7 +112,8 @@ impl TowerImpl of TowerTrait {
             range,
             level: 1,
             cost,
-            freeze: 0,
+            idle: 0,
+            hit: 0,
         }
     }
 
@@ -157,7 +160,18 @@ impl TowerImpl of TowerTrait {
     }
 
     #[inline(always)]
-    fn can_attack(self: Tower, mob: Mob) -> bool {
+    fn can_attack(self: Tower, mob: Mob, tick: u32) -> bool {
+        let is_in_range = self.in_range(mob);
+        let is_idle = if self.is_wizard() {
+            ((tick + self.cooldown) == self.idle && self.hit == mob.index) || tick >= self.idle
+        } else {
+            self.is_idle(tick)
+        };
+        is_in_range && is_idle
+    }
+
+    #[inline(always)]
+    fn in_range(self: Tower, mob: Mob) -> bool {
         let mut map = MapTrait::load(self.index);
         let (top, left, bottom, right) = map.box(self.range);
         let mut map = MapTrait::load(mob.index);
@@ -167,8 +181,11 @@ impl TowerImpl of TowerTrait {
     }
 
     #[inline(always)]
-    fn is_frozen(self: Tower, tick: u32) -> bool {
-        tick < self.freeze
+    fn is_idle(self: Tower, tick: u32) -> bool {
+        if self.is_barbarian() {
+            return (tick + self.cooldown) == self.idle || tick >= self.idle;
+        };
+        tick >= self.idle
     }
 
     #[inline(always)]
@@ -183,7 +200,8 @@ impl TowerImpl of TowerTrait {
         } else {
             damage
         };
-        self.freeze = tick + self.cooldown;
+        self.idle = tick + self.cooldown;
+        self.hit = mob.index;
         damage
     }
 }
@@ -221,7 +239,7 @@ mod tests {
         assert(tower.range == super::TOWER_BARBARIAN_RANGE, 'Tower: wrong range');
         assert(tower.level == 1, 'Tower: wrong level');
         assert(tower.cost == super::TOWER_BARBARIAN_COST, 'Tower: wrong cost');
-        assert(tower.freeze == 0, 'Tower: wrong freeze');
+        assert(tower.idle == 0, 'Tower: wrong idle');
     }
 
     #[test]
@@ -282,18 +300,18 @@ mod tests {
 
     #[test]
     #[available_gas(2000000)]
-    fn test_tower_can_attack() {
+    fn test_tower_in_range() {
         let mut mob = MobTrait::new(GAME_ID, ID, MobCategory::Normal);
         let mut tower = TowerTrait::new(GAME_ID, ID, SPAWN_INDEX, Category::Barbarian);
-        assert(tower.can_attack(mob), 'Tower: wrong can_attack');
+        assert(tower.in_range(mob), 'Tower: wrong can_attack');
     }
 
     #[test]
     #[available_gas(2000000)]
-    fn test_tower_cannot_attack() {
+    fn test_tower_not_in_range() {
         let mut mob = MobTrait::new(GAME_ID, ID, MobCategory::Normal);
         let mut tower = TowerTrait::new(GAME_ID, ID, INDEX, Category::Barbarian);
-        assert(!tower.can_attack(mob), 'Tower: wrong can_attack');
+        assert(!tower.in_range(mob), 'Tower: wrong can_attack');
     }
 
     #[test]
@@ -305,18 +323,61 @@ mod tests {
         let tick = 0;
         tower.attack(ref mob, tick);
         assert(mob.health < health, 'Tower: wrong mob health');
-        assert(tower.freeze > 0, 'Tower: wrong mob health');
+        assert(tower.idle > 0, 'Tower: wrong mob health');
     }
 
     #[test]
     #[available_gas(2000000)]
-    fn test_tower_frozen() {
+    fn test_tower_idle() {
         let mut mob = MobTrait::new(GAME_ID, ID, MobCategory::Normal);
         let mut tower = TowerTrait::new(GAME_ID, ID, INDEX, Category::Barbarian);
         let tick = 0;
         tower.attack(ref mob, tick);
-        assert(tower.is_frozen(tick), 'Tower: must be frozen');
+        assert(tower.is_idle(tick), 'Tower: must be not idle');
         let tick = tick + tower.cooldown;
-        assert(!tower.is_frozen(tick), 'Tower: must be not frozen');
+        assert(tower.is_idle(tick), 'Tower: must be idle');
+    }
+
+    #[test]
+    #[available_gas(2000000)]
+    fn test_tower_barbarian_can_attack() {
+        let mut mob = MobTrait::new(GAME_ID, ID, MobCategory::Normal);
+        let mut tower = TowerTrait::new(GAME_ID, ID, SPAWN_INDEX, Category::Barbarian);
+        let tick = 0;
+        assert(tower.can_attack(mob, tick), 'Tower: wrong can_attack');
+        tower.attack(ref mob, tick);
+        assert(tower.can_attack(mob, tick), 'Tower: wrong can_attack');
+        let tick = 1;
+        assert(!tower.can_attack(mob, tick), 'Tower: wrong can_attack');
+        let tick = tower.cooldown;
+        assert(tower.can_attack(mob, tick), 'Tower: wrong can_attack');
+    }
+
+    #[test]
+    #[available_gas(2000000)]
+    fn test_tower_bowman_can_attack() {
+        let mut mob = MobTrait::new(GAME_ID, ID, MobCategory::Normal);
+        let mut tower = TowerTrait::new(GAME_ID, ID, SPAWN_INDEX, Category::Bowman);
+        let tick = 0;
+        assert(tower.can_attack(mob, tick), 'Tower: wrong can_attack');
+        tower.attack(ref mob, tick);
+        assert(!tower.can_attack(mob, tick), 'Tower: wrong can_attack');
+        let tick = tower.cooldown;
+        assert(tower.can_attack(mob, tick), 'Tower: wrong can_attack');
+    }
+
+    #[test]
+    #[available_gas(2000000)]
+    fn test_tower_wizard_can_attack() {
+        let mut mob = MobTrait::new(GAME_ID, ID, MobCategory::Normal);
+        let mut tower = TowerTrait::new(GAME_ID, ID, SPAWN_INDEX, Category::Wizard);
+        let tick = 0;
+        assert(tower.can_attack(mob, tick), 'Tower: wrong can_attack');
+        tower.attack(ref mob, tick);
+        assert(tower.can_attack(mob, tick), 'Tower: wrong can_attack');
+        mob.move();
+        assert(!tower.can_attack(mob, tick), 'Tower: wrong can_attack');
+        let tick = tower.cooldown;
+        assert(tower.can_attack(mob, tick), 'Tower: wrong can_attack');
     }
 }
