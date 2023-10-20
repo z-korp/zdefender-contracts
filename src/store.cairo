@@ -30,6 +30,7 @@ trait StoreTrait {
     fn set_mobs(ref self: Store, mobs: Span<Mob>);
     fn set_tower(ref self: Store, tower: Tower);
     fn set_towers(ref self: Store, towers: Span<Tower>);
+    fn remove_tower(ref self: Store, game: Game, tower: Tower);
 }
 
 /// Implementation of the `StoreTrait` trait for the `Store` struct.
@@ -127,5 +128,12 @@ impl StoreImpl of StoreTrait {
                 },
             };
         };
+    }
+
+    fn remove_tower(ref self: Store, game: Game, tower: Tower) {
+        let last_tower_id: u32 = game.tower_count.into();
+        let mut last_tower = self.tower(game, last_tower_id);
+        last_tower.index = tower.index;
+        self.set_tower(last_tower);
     }
 }

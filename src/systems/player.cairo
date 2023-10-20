@@ -26,6 +26,7 @@ trait IActions<TContractState> {
         category: TowerCategory,
     );
     fn upgrade(self: @TContractState, world: IWorldDispatcher, player: felt252, x: u32, y: u32,);
+    fn sell(self: @TContractState, world: IWorldDispatcher, player: felt252, x: u32, y: u32,);
 }
 
 // System implementation
@@ -68,6 +69,8 @@ mod actions {
         const UPGRADE_INVALID_GAME_STATUS: felt252 = 'Upgrade: invalid game status';
         const UPGRADE_INVALID_POSITION: felt252 = 'Upgrade: invalid position';
         const UPGRADE_NOT_ENOUGH_GOLD: felt252 = 'Upgrade: not enough gold';
+        const SELL_INVALID_GAME_STATUS: felt252 = 'Sell: invalid game status';
+        const SELL_INVALID_POSITION: felt252 = 'Sell: invalid position';
     }
 
     #[storage]
@@ -109,7 +112,7 @@ mod actions {
             assert(!game.over, errors::BUILD_INVALID_GAME_STATUS);
 
             // [Check] Enough gold
-            let cost = TowerTrait::cost(category.into());
+            let cost = TowerTrait::build_cost(category.into());
             assert(game.gold >= cost, errors::BUILD_NOT_ENOUGH_GOLD);
 
             // [Check] Tile is idle (no road, no tower)
@@ -162,6 +165,33 @@ mod actions {
 
             // [Effect] Game
             game.gold -= cost;
+            store.set_game(game);
+        }
+
+        fn sell(self: @ContractState, world: IWorldDispatcher, player: felt252, x: u32, y: u32,) {
+            // [Setup] Datastore
+            let mut store: Store = StoreTrait::new(world);
+
+            // [Effect] Game entity
+            let mut game: Game = store.game(player);
+
+            // [Check] Game is not over
+            assert(!game.over, errors::SELL_INVALID_GAME_STATUS);
+
+            // [Effect] Tower
+            let map = MapTrait::from(x, y);
+            let mut tower = store.tower(game, map.index);
+
+            // [Check] Tower exists
+            assert(tower.id != 0, errors::SELL_INVALID_POSITION);
+
+            // [Effect] Sell Tower
+            let cost = tower.sell_cost();
+            store.remove_tower(game, tower);
+
+            // [Effect] Game
+            game.tower_count -= 1;
+            game.gold += cost;
             store.set_game(game);
         }
     }
