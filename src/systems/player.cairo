@@ -235,8 +235,14 @@ mod actions {
                     }
                     index -= 1;
                     let mut mob = store.mob(game, index);
-                    mob.move(ref game);
-                    store.set_mob(mob);
+                    let status = mob.move();
+                    // [Check] Mob reached castle
+                    if status {
+                        game.take_damage();
+                        store.remove_mob(game, mob);
+                    } else {
+                        store.set_mob(mob);
+                    };
                 };
 
                 // [Effect] Perform tower attacks
@@ -248,7 +254,7 @@ mod actions {
 
                     let mut tower = store.tower(game, index);
                     index -= 1;
-                    if tower.is_freeze(tick) {
+                    if tower.is_frozen(tick) {
                         continue;
                     }
 
@@ -257,7 +263,7 @@ mod actions {
                         match mobs.pop_front() {
                             Option::Some(snap_mob) => {
                                 let mut mob = *snap_mob;
-                                if !tower.is_freeze(tick) && tower.can_attack(mob) {
+                                if !tower.is_frozen(tick) && tower.can_attack(mob) {
                                     tower.attack(ref mob, tick);
                                     if mob.health == 0 {
                                         store.remove_mob(game, mob);

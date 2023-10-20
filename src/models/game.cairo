@@ -50,3 +50,57 @@ impl GameImpl of GameTrait {
         };
     }
 }
+
+#[cfg(test)]
+mod tests {
+    // Core imports
+
+    use debug::PrintTrait;
+
+    // Local imports
+
+    use super::{Game, GameTrait};
+
+    // Constants
+
+    const KEY: felt252 = 'KEY';
+    const ID: u32 = 0;
+    const SEED: felt252 = 'SEED';
+    const NAME: felt252 = 'NAME';
+
+    #[test]
+    #[available_gas(2000000)]
+    fn test_game_new() {
+        let mut game = GameTrait::new(KEY, ID, SEED, NAME);
+        assert(game.key == KEY, 'Game: wrong key');
+        assert(game.id == ID, 'Game: wrong id');
+        assert(game.seed == SEED, 'Game: wrong seed');
+        assert(game.name == NAME, 'Game: wrong name');
+        assert(game.over == false, 'Game: wrong over');
+        assert(game.tower_count == 0, 'Game: wrong tower_count');
+        assert(game.mob_count == 0, 'Game: wrong mob_count');
+        assert(game.mob_remaining > 0, 'Game: wrong mob_remaining');
+        assert(game.wave == 0, 'Game: wrong wave');
+        assert(game.gold > 0, 'Game: wrong gold');
+        assert(game.health > 0, 'Game: wrong health');
+    }
+
+    #[test]
+    #[available_gas(2000000)]
+    fn test_game_take_damage() {
+        let mut game = GameTrait::new(KEY, ID, SEED, NAME);
+        let health = game.health;
+        game.take_damage();
+        assert(game.health == health - 1, 'Game: wrong health');
+    }
+
+    #[test]
+    #[available_gas(2000000)]
+    fn test_game_take_damage_no_subflow() {
+        let mut game = GameTrait::new(KEY, ID, SEED, NAME);
+        game.health = 0;
+        game.take_damage();
+        assert(game.health == 0, 'Game: wrong health');
+    }
+}
+

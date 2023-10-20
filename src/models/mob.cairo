@@ -39,7 +39,7 @@ struct Mob {
 
 trait MobTrait {
     fn new(game_id: u32, id: u32, category: Category) -> Mob;
-    fn move(ref self: Mob, ref game: Game);
+    fn move(ref self: Mob) -> bool;
 }
 
 impl MobImpl of MobTrait {
@@ -58,21 +58,57 @@ impl MobImpl of MobTrait {
         Mob { game_id, id, index: SPAWN_INDEX, health, speed, defense, }
     }
 
-    fn move(ref self: Mob, ref game: Game) {
+    fn move(ref self: Mob) -> bool {
         let mut index = self.speed;
         loop {
             let mut map = MapTrait::load(self.index);
+            // [Break] Mob is reaching the player castle
+            if map.is_idle() {
+                break true;
+            }
             // [Break] If all moves done
             if index == 0 {
-                break;
-            }
-            // [Break] Mob is reaching the player nexus
-            if map.is_idle() {
-                game.take_damage();
-                break;
+                break false;
             }
             self.index = map.next();
             index -= 1;
-        };
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    // Core imports
+
+    use debug::PrintTrait;
+
+    // Local imports
+
+    use super::{Mob, MobTrait, Category};
+
+    // Constants
+
+    const GAME_ID: u32 = 0;
+    const ID: u32 = 0;
+
+    #[test]
+    #[available_gas(2000000)]
+    fn test_mob_new() {
+        let mut mob = MobTrait::new(GAME_ID, ID, Category::Normal);
+        assert(mob.game_id == GAME_ID, 'Mob: wrong game id');
+        assert(mob.id == ID, 'Mob: wrong id');
+        assert(mob.index == super::SPAWN_INDEX, 'Mob: wrong index');
+        assert(mob.health == super::MOB_NORMAL_HEALTH, 'Mob: wrong health');
+        assert(mob.speed == super::MOB_NORMAL_SPEED, 'Mob: wrong speed');
+        assert(mob.defense == super::MOB_NORMAL_DEFENSE, 'Mob: wrong defense');
+    }
+
+    #[test]
+    #[available_gas(2000000)]
+    fn test_mob_move() {
+        let mut mob = MobTrait::new(GAME_ID, ID, Category::Normal);
+        let index = mob.index;
+        let status = mob.move();
+        assert(!status, 'Mob: wrong move status');
     }
 }

@@ -72,13 +72,12 @@ trait TowerTrait {
     fn is_barbarian(self: Tower) -> bool;
     fn is_bowman(self: Tower) -> bool;
     fn is_wizard(self: Tower) -> bool;
-    fn total_cost(self: Tower) -> u16;
     fn sell_cost(self: Tower) -> u16;
     fn upgrade_cost(self: Tower) -> u16;
     fn upgrade(ref self: Tower);
     fn build_cost(category: Category) -> u16;
     fn can_attack(self: Tower, mob: Mob) -> bool;
-    fn is_freeze(self: Tower, tick: u32) -> bool;
+    fn is_frozen(self: Tower, tick: u32) -> bool;
     fn attack(ref self: Tower, ref mob: Mob, tick: u32);
 }
 
@@ -126,11 +125,6 @@ impl TowerImpl of TowerTrait {
         self.category == Category::Wizard.into()
     }
 
-    fn total_cost(self: Tower) -> u16 {
-        let cost = TowerTrait::build_cost(self.category.into());
-        cost * self.level.into()
-    }
-
     fn sell_cost(self: Tower) -> u16 {
         TOWER_SELL_RATIO_NUM * self.cost / TOWER_SELL_RATIO_DEN
     }
@@ -163,8 +157,8 @@ impl TowerImpl of TowerTrait {
         mob_x >= left && mob_x <= right && mob_y >= top && mob_y <= bottom
     }
 
-    fn is_freeze(self: Tower, tick: u32) -> bool {
-        tick >= self.freeze
+    fn is_frozen(self: Tower, tick: u32) -> bool {
+        tick < self.freeze
     }
 
     fn attack(ref self: Tower, ref mob: Mob, tick: u32) {
@@ -179,5 +173,138 @@ impl TowerImpl of TowerTrait {
             damage
         };
         self.freeze = tick + self.cooldown;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    // Core imports
+
+    use debug::PrintTrait;
+
+    // Internal imports
+
+    use zdefender::models::mob::{Mob, MobTrait, Category as MobCategory, SPAWN_INDEX};
+
+    // Local imports
+
+    use super::{Tower, TowerTrait, Category};
+
+    // Constants
+
+    const GAME_ID: u32 = 0;
+    const ID: u32 = 0;
+    const INDEX: u32 = 0;
+
+    #[test]
+    #[available_gas(2000000)]
+    fn test_tower_new() {
+        let mut tower = TowerTrait::new(GAME_ID, ID, INDEX, Category::Barbarian);
+        assert(tower.game_id == GAME_ID, 'Tower: wrong game id');
+        assert(tower.id == ID, 'Tower: wrong id');
+        assert(tower.index == INDEX, 'Tower: wrong index');
+        assert(tower.category == Category::Barbarian.into(), 'Tower: wrong category');
+        assert(tower.cooldown == super::TOWER_BARBARIAN_COOLDOWN, 'Tower: wrong cooldown');
+        assert(tower.attack == super::TOWER_BARBARIAN_ATTACK, 'Tower: wrong attack');
+        assert(tower.range == super::TOWER_BARBARIAN_RANGE, 'Tower: wrong range');
+        assert(tower.level == 1, 'Tower: wrong level');
+        assert(tower.cost == super::TOWER_BARBARIAN_COST, 'Tower: wrong cost');
+        assert(tower.freeze == 0, 'Tower: wrong freeze');
+    }
+
+    #[test]
+    #[available_gas(2000000)]
+    fn test_tower_is_barbarian() {
+        let mut tower = TowerTrait::new(GAME_ID, ID, INDEX, Category::Barbarian);
+        assert(tower.is_barbarian(), 'Tower: wrong is_barbarian');
+        assert(!tower.is_bowman(), 'Tower: wrong is_bowman');
+        assert(!tower.is_wizard(), 'Tower: wrong is_wizard');
+    }
+
+    #[test]
+    #[available_gas(2000000)]
+    fn test_tower_is_bowman() {
+        let mut tower = TowerTrait::new(GAME_ID, ID, INDEX, Category::Bowman);
+        assert(!tower.is_barbarian(), 'Tower: wrong is_barbarian');
+        assert(tower.is_bowman(), 'Tower: wrong is_bowman');
+        assert(!tower.is_wizard(), 'Tower: wrong is_wizard');
+    }
+
+    #[test]
+    #[available_gas(2000000)]
+    fn test_tower_is_wizard() {
+        let mut tower = TowerTrait::new(GAME_ID, ID, INDEX, Category::Wizard);
+        assert(!tower.is_barbarian(), 'Tower: wrong is_barbarian');
+        assert(!tower.is_bowman(), 'Tower: wrong is_bowman');
+        assert(tower.is_wizard(), 'Tower: wrong is_wizard');
+    }
+
+    #[test]
+    #[available_gas(2000000)]
+    fn test_tower_build_cost() {
+        let cost = TowerTrait::build_cost(Category::Barbarian);
+        assert(cost == super::TOWER_BARBARIAN_COST, 'Tower: wrong build_cost');
+    }
+
+    #[test]
+    #[available_gas(2000000)]
+    fn test_tower_upgrade() {
+        let mut tower = TowerTrait::new(GAME_ID, ID, INDEX, Category::Barbarian);
+        let cost = tower.cost;
+        let attack = tower.attack;
+        let level = tower.level;
+        tower.upgrade();
+        assert(tower.cost > cost, 'Tower: wrong cost');
+        assert(tower.attack > attack, 'Tower: wrong attack');
+        assert(tower.level == level + 1, 'Tower: wrong level');
+    }
+
+    #[test]
+    #[available_gas(2000000)]
+    fn test_tower_upgrade_cost() {
+        let mut tower = TowerTrait::new(GAME_ID, ID, INDEX, Category::Barbarian);
+        let cost = tower.upgrade_cost() + tower.cost;
+        tower.upgrade();
+        assert(tower.cost == cost, 'Tower: wrong cost');
+    }
+
+    #[test]
+    #[available_gas(2000000)]
+    fn test_tower_can_attack() {
+        let mut mob = MobTrait::new(GAME_ID, ID, MobCategory::Normal);
+        let mut tower = TowerTrait::new(GAME_ID, ID, SPAWN_INDEX, Category::Barbarian);
+        assert(tower.can_attack(mob), 'Tower: wrong can_attack');
+    }
+
+    #[test]
+    #[available_gas(2000000)]
+    fn test_tower_cannot_attack() {
+        let mut mob = MobTrait::new(GAME_ID, ID, MobCategory::Normal);
+        let mut tower = TowerTrait::new(GAME_ID, ID, INDEX, Category::Barbarian);
+        assert(!tower.can_attack(mob), 'Tower: wrong can_attack');
+    }
+
+    #[test]
+    #[available_gas(2000000)]
+    fn test_tower_attack() {
+        let mut mob = MobTrait::new(GAME_ID, ID, MobCategory::Normal);
+        let mut tower = TowerTrait::new(GAME_ID, ID, INDEX, Category::Barbarian);
+        let health = mob.health;
+        let tick = 0;
+        tower.attack(ref mob, tick);
+        assert(mob.health < health, 'Tower: wrong mob health');
+        assert(tower.freeze > 0, 'Tower: wrong mob health');
+    }
+
+    #[test]
+    #[available_gas(2000000)]
+    fn test_tower_frozen() {
+        let mut mob = MobTrait::new(GAME_ID, ID, MobCategory::Normal);
+        let mut tower = TowerTrait::new(GAME_ID, ID, INDEX, Category::Barbarian);
+        let tick = 0;
+        tower.attack(ref mob, tick);
+        assert(tower.is_frozen(tick), 'Tower: must be frozen');
+        let tick = tick + tower.cooldown;
+        assert(!tower.is_frozen(tick), 'Tower: must be not frozen');
     }
 }
