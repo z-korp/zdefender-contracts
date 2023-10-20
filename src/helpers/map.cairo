@@ -155,3 +155,103 @@ fn _down(index: u32) -> u32 {
     assert(index < MAP_SIZE * MAP_SIZE - MAP_SIZE, errors::MAP_INVALID_INDEX);
     index + MAP_SIZE
 }
+
+#[cfg(test)]
+mod tests {
+    // Core imports
+
+    use debug::PrintTrait;
+
+    // Local imports
+
+    use super::{MapTrait, MAP_SIZE, TILE_SIZE, TILE_COUNT, SPAWN_INDEX};
+
+    #[test]
+    #[available_gas(2000000)]
+    fn test_map_new() {
+        let mut map = MapTrait::new();
+        assert(map.index == SPAWN_INDEX, 'Map: wrong index');
+        assert(map.x() == SPAWN_INDEX % MAP_SIZE, 'Map: wrong x');
+        assert(map.y() == SPAWN_INDEX / MAP_SIZE, 'Map: wrong y');
+    }
+
+    #[test]
+    #[available_gas(2000000)]
+    fn test_map_load() {
+        let mut map = MapTrait::load(0);
+        assert(map.index == 0, 'Map: wrong index');
+        assert(map.x() == 0, 'Map: wrong x');
+        assert(map.y() == 0, 'Map: wrong y');
+    }
+
+    #[test]
+    #[available_gas(2000000)]
+    fn test_map_from() {
+        let mut map = MapTrait::from(0, 0);
+        assert(map.index == 0, 'Map: wrong index');
+        assert(map.x() == 0, 'Map: wrong x');
+        assert(map.y() == 0, 'Map: wrong y');
+    }
+
+    #[test]
+    #[available_gas(2000000)]
+    fn test_map_box_top_left() {
+        let mut map = MapTrait::from(0, 0);
+        let (top, left, bottom, right) = map.box(1);
+        assert(top == 0, 'Map: wrong top');
+        assert(left == 0, 'Map: wrong left');
+        assert(bottom == 1, 'Map: wrong bottom');
+        assert(right == 1, 'Map: wrong right');
+    }
+
+    #[test]
+    #[available_gas(2000000)]
+    fn test_map_box_top_right() {
+        let mut map = MapTrait::from(MAP_SIZE - 1, 0);
+        let (top, left, bottom, right) = map.box(1);
+        top.print();
+        left.print();
+        bottom.print();
+        right.print();
+        assert(top == 0, 'Map: wrong top');
+        assert(left == MAP_SIZE - 2, 'Map: wrong left');
+        assert(bottom == 1, 'Map: wrong bottom');
+        assert(right == MAP_SIZE - 1, 'Map: wrong right');
+    }
+
+    #[test]
+    #[available_gas(2000000)]
+    fn test_map_box_bottom_right() {
+        let mut map = MapTrait::from(MAP_SIZE - 1, MAP_SIZE - 1);
+        let (top, left, bottom, right) = map.box(1);
+        assert(top == MAP_SIZE - 2, 'Map: wrong top');
+        assert(left == MAP_SIZE - 2, 'Map: wrong left');
+        assert(bottom == MAP_SIZE - 1, 'Map: wrong bottom');
+        assert(right == MAP_SIZE - 1, 'Map: wrong right');
+    }
+
+    #[test]
+    #[available_gas(2000000)]
+    fn test_map_box_bottom_left() {
+        let mut map = MapTrait::from(0, MAP_SIZE - 1);
+        let (top, left, bottom, right) = map.box(1);
+        assert(top == MAP_SIZE - 2, 'Map: wrong top');
+        assert(left == 0, 'Map: wrong left');
+        assert(bottom == MAP_SIZE - 1, 'Map: wrong bottom');
+        assert(right == 1, 'Map: wrong right');
+    }
+
+    #[test]
+    #[available_gas(2000000)]
+    fn test_map_next() {
+        let mut map = MapTrait::new();
+        assert(map.next() != TILE_COUNT, 'Map: wrong next');
+    }
+
+    #[test]
+    #[available_gas(2000000)]
+    fn test_map_next_not_defined() {
+        let mut map = MapTrait::load(0);
+        assert(map.next() == TILE_COUNT, 'Map: wrong next');
+    }
+}
