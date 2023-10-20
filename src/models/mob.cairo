@@ -9,15 +9,15 @@ use zdefender::models::game::{Game, GameTrait};
 
 const MOB_NORMAL_HEALTH: u32 = 100;
 const MOB_NORMAL_SPEED: u32 = 2;
-const MOB_NORMAL_DEFENSE: u32 = 10;
+const MOB_NORMAL_DEFENSE: u32 = 1;
 const MOB_NORMAL_REWARD: u16 = 1;
-const MOB_ELITE_HEALTH: u32 = 1000;
+const MOB_ELITE_HEALTH: u32 = 200;
 const MOB_ELITE_SPEED: u32 = 1;
-const MOB_ELITE_DEFENSE: u32 = 100;
+const MOB_ELITE_DEFENSE: u32 = 5;
 const MOB_ELITE_REWARD: u16 = 5;
-const MOB_BOSS_HEALTH: u32 = 10000;
+const MOB_BOSS_HEALTH: u32 = 300;
 const MOB_BOSS_SPEED: u32 = 1;
-const MOB_BOSS_DEFENSE: u32 = 1000;
+const MOB_BOSS_DEFENSE: u32 = 10;
 const MOB_BOSS_REWARD: u16 = 50;
 const MOB_ELITE_SPAWN_RATE: u8 = 13;
 

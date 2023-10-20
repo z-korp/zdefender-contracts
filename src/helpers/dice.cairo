@@ -9,7 +9,7 @@ use traits::Into;
 
 // Constants
 
-const DICE_FACES_NUMBER: u8 = 3;
+const DICE_FACES_NUMBER: u8 = 2;
 
 /// Dice struct.
 #[derive(Drop)]

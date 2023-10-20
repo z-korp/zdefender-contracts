@@ -16,7 +16,7 @@ use zdefender::models::tower::{
     Tower, TowerTrait, Category as TowerCategory, TOWER_BARBARIAN_COST, TOWER_SELL_RATIO_NUM,
     TOWER_SELL_RATIO_DEN
 };
-use zdefender::systems::player::IActionsDispatcherTrait;
+use zdefender::systems::player::{IActionsDispatcherTrait, actions::Hit};
 use zdefender::helpers::map::{Map, MapTrait};
 use zdefender::tests::setup::{setup, setup::Systems, setup::PLAYER};
 
@@ -27,7 +27,7 @@ const SEED: felt252 = 'SEED';
 const NAME: felt252 = 'NAME';
 
 #[test]
-#[available_gas(1_000_000_000)]
+#[available_gas(1_000_000_000_000)]
 fn test_run() {
     // [Setup]
     let (world, systems) = setup::spawn_game();
@@ -37,7 +37,7 @@ fn test_run() {
     systems.player_actions.create(world, ACCOUNT, SEED, NAME);
 
     // [Build]
-    let mut map = MapTrait::from(2, 3);
+    let mut map = MapTrait::from(1, 5);
     systems.player_actions.build(world, ACCOUNT, map.x(), map.y(), TowerCategory::Barbarian);
 
     // [Upgrade] 
@@ -45,4 +45,8 @@ fn test_run() {
 
     // [Run]
     systems.player_actions.run(world, ACCOUNT);
+
+    // [Assert] Game
+    let game: Game = store.game(ACCOUNT);
+    assert(game.over == false, 'Game: wrong status');
 }

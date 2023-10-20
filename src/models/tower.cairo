@@ -78,7 +78,7 @@ trait TowerTrait {
     fn build_cost(category: Category) -> u16;
     fn can_attack(self: Tower, mob: Mob) -> bool;
     fn is_frozen(self: Tower, tick: u32) -> bool;
-    fn attack(ref self: Tower, ref mob: Mob, tick: u32);
+    fn attack(ref self: Tower, ref mob: Mob, tick: u32) -> u32;
 }
 
 impl TowerImpl of TowerTrait {
@@ -161,11 +161,11 @@ impl TowerImpl of TowerTrait {
         tick < self.freeze
     }
 
-    fn attack(ref self: Tower, ref mob: Mob, tick: u32) {
+    fn attack(ref self: Tower, ref mob: Mob, tick: u32) -> u32 {
         let damage = if self.attack > mob.defense {
             self.attack - mob.defense
         } else {
-            0
+            1
         };
         mob.health -= if damage > mob.health {
             mob.health
@@ -173,6 +173,7 @@ impl TowerImpl of TowerTrait {
             damage
         };
         self.freeze = tick + self.cooldown;
+        damage
     }
 }
 

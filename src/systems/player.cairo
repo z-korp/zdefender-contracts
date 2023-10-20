@@ -82,6 +82,20 @@ mod actions {
     #[storage]
     struct Storage {}
 
+    #[event]
+    #[derive(Drop, starknet::Event)]
+    enum Event {
+        Hit: Hit,
+    }
+
+    #[derive(Drop, starknet::Event)]
+    struct Hit {
+        tick: u32,
+        from: u32,
+        to: u32,
+        damage: u32,
+    }
+
     #[external(v0)]
     impl Actions of IActions<ContractState> {
         fn create(
@@ -217,64 +231,10 @@ mod actions {
                 }
 
                 // [Check] Wave is over
-                if game.mob_remaining == 0 {
+                if game.mob_count == 0 && game.mob_remaining == 0 {
                     game.wave += 1;
                     break;
                 }
-
-                // [Effect] Perform mob moves
-                let mut index: u32 = game.mob_count.into();
-                loop {
-                    if index == 0 {
-                        break;
-                    }
-                    index -= 1;
-                    let mut mob = store.mob(game, index);
-                    let status = mob.move();
-                    // [Check] Mob reached castle
-                    if status {
-                        game.take_damage();
-                        store.remove_mob(game, mob);
-                    } else {
-                        store.set_mob(mob);
-                    };
-                };
-
-                // [Effect] Perform tower attacks
-                let mut index: u32 = game.tower_count.into();
-                loop {
-                    if index == 0 {
-                        break;
-                    }
-
-                    let mut tower = store.tower(game, index);
-                    index -= 1;
-                    if tower.is_frozen(tick) {
-                        continue;
-                    }
-
-                    let mut mobs = store.mobs(game);
-                    loop {
-                        match mobs.pop_front() {
-                            Option::Some(snap_mob) => {
-                                let mut mob = *snap_mob;
-                                if !tower.is_frozen(tick) && tower.can_attack(mob) {
-                                    tower.attack(ref mob, tick);
-                                    if mob.health == 0 {
-                                        game.gold += mob.reward;
-                                        store.remove_mob(game, mob);
-                                    } else {
-                                        store.set_mob(mob);
-                                    };
-                                    store.set_tower(tower);
-                                };
-                            },
-                            Option::None => {
-                                break;
-                            },
-                        };
-                    };
-                };
 
                 // [Effect] Perform mob spawns
                 let mut index = dice.roll(); // Roll a dice to determine how many mob will spawn
@@ -301,6 +261,66 @@ mod actions {
                     game.mob_count += 1;
                     game.mob_remaining -= 1;
                     index -= 1;
+                };
+
+                // [Effect] Perform tower attacks
+                let mut index: u32 = game.tower_count.into();
+                loop {
+                    if index == 0 {
+                        break;
+                    }
+
+                    index -= 1;
+                    let mut tower = store.tower(game, index);
+                    if tower.is_frozen(tick) {
+                        continue;
+                    }
+
+                    let mut mobs = store.mobs(game);
+                    loop {
+                        match mobs.pop_front() {
+                            Option::Some(snap_mob) => {
+                                let mut mob = *snap_mob;
+                                if !tower.is_frozen(tick) && tower.can_attack(mob) {
+                                    let damage = tower.attack(ref mob, tick);
+                                    if mob.health == 0 {
+                                        game.gold += mob.reward;
+                                        store.remove_mob(game, mob);
+                                        game.mob_count -= 1;
+                                    } else {
+                                        store.set_mob(mob);
+                                    };
+                                    store.set_tower(tower);
+                                    let hit = Hit { tick, from: tower.id, to: mob.id, damage, };
+
+                                    // [Event] Hit
+                                    emit!(world, hit);
+                                };
+                            },
+                            Option::None => {
+                                break;
+                            },
+                        };
+                    };
+                };
+
+                // [Effect] Perform mob moves
+                let mut index: u32 = game.mob_count.into();
+                loop {
+                    if index == 0 {
+                        break;
+                    }
+                    index -= 1;
+                    let mut mob = store.mob(game, index);
+                    let status = mob.move();
+                    // [Check] Mob reached castle
+                    if status {
+                        game.take_damage();
+                        store.remove_mob(game, mob);
+                        game.mob_count -= 1;
+                    } else {
+                        store.set_mob(mob);
+                    };
                 };
 
                 // [Effect] Update game
