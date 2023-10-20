@@ -131,7 +131,7 @@ impl TowerImpl of TowerTrait {
 
     fn upgrade_cost(self: Tower) -> u16 {
         let cost = TowerTrait::build_cost(self.category.into());
-        cost * (self.level + 1).into()
+        cost * self.level.into()
     }
 
     fn upgrade(ref self: Tower) {

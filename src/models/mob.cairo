@@ -10,12 +10,15 @@ use zdefender::models::game::{Game, GameTrait};
 const MOB_NORMAL_HEALTH: u32 = 100;
 const MOB_NORMAL_SPEED: u32 = 2;
 const MOB_NORMAL_DEFENSE: u32 = 10;
+const MOB_NORMAL_REWARD: u16 = 1;
 const MOB_ELITE_HEALTH: u32 = 1000;
 const MOB_ELITE_SPEED: u32 = 1;
 const MOB_ELITE_DEFENSE: u32 = 100;
+const MOB_ELITE_REWARD: u16 = 5;
 const MOB_BOSS_HEALTH: u32 = 10000;
 const MOB_BOSS_SPEED: u32 = 1;
 const MOB_BOSS_DEFENSE: u32 = 1000;
+const MOB_BOSS_REWARD: u16 = 50;
 const MOB_ELITE_SPAWN_RATE: u8 = 13;
 
 #[derive(Drop, PartialEq)]
@@ -35,6 +38,7 @@ struct Mob {
     health: u32,
     speed: u32,
     defense: u32,
+    reward: u16,
 }
 
 trait MobTrait {
@@ -44,18 +48,18 @@ trait MobTrait {
 
 impl MobImpl of MobTrait {
     fn new(game_id: u32, id: u32, category: Category) -> Mob {
-        let (health, speed, defense) = match category {
+        let (health, speed, defense, reward) = match category {
             Category::Normal => {
-                (MOB_NORMAL_HEALTH, MOB_NORMAL_SPEED, MOB_NORMAL_DEFENSE)
+                (MOB_NORMAL_HEALTH, MOB_NORMAL_SPEED, MOB_NORMAL_DEFENSE, MOB_NORMAL_REWARD)
             },
             Category::Elite => {
-                (MOB_ELITE_HEALTH, MOB_ELITE_SPEED, MOB_ELITE_DEFENSE)
+                (MOB_ELITE_HEALTH, MOB_ELITE_SPEED, MOB_ELITE_DEFENSE, MOB_ELITE_REWARD)
             },
             Category::Boss => {
-                (MOB_BOSS_HEALTH, MOB_BOSS_SPEED, MOB_BOSS_DEFENSE)
+                (MOB_BOSS_HEALTH, MOB_BOSS_SPEED, MOB_BOSS_DEFENSE, MOB_BOSS_REWARD)
             },
         };
-        Mob { game_id, id, index: SPAWN_INDEX, health, speed, defense, }
+        Mob { game_id, id, index: SPAWN_INDEX, health, speed, defense, reward }
     }
 
     fn move(ref self: Mob) -> bool {
@@ -101,6 +105,7 @@ mod tests {
         assert(mob.health == super::MOB_NORMAL_HEALTH, 'Mob: wrong health');
         assert(mob.speed == super::MOB_NORMAL_SPEED, 'Mob: wrong speed');
         assert(mob.defense == super::MOB_NORMAL_DEFENSE, 'Mob: wrong defense');
+        assert(mob.reward == super::MOB_NORMAL_REWARD, 'Mob: wrong reward');
     }
 
     #[test]

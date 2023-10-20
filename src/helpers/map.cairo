@@ -209,10 +209,6 @@ mod tests {
     fn test_map_box_top_right() {
         let mut map = MapTrait::from(MAP_SIZE - 1, 0);
         let (top, left, bottom, right) = map.box(1);
-        top.print();
-        left.print();
-        bottom.print();
-        right.print();
         assert(top == 0, 'Map: wrong top');
         assert(left == MAP_SIZE - 2, 'Map: wrong left');
         assert(bottom == 1, 'Map: wrong bottom');

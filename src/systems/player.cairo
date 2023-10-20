@@ -25,8 +25,8 @@ trait IActions<TContractState> {
         y: u32,
         category: TowerCategory,
     );
-    fn upgrade(self: @TContractState, world: IWorldDispatcher, player: felt252, x: u32, y: u32,);
-    fn sell(self: @TContractState, world: IWorldDispatcher, player: felt252, x: u32, y: u32,);
+    fn upgrade(self: @TContractState, world: IWorldDispatcher, player: felt252, tower_id: u32,);
+    fn sell(self: @TContractState, world: IWorldDispatcher, player: felt252, tower_id: u32,);
     fn run(self: @TContractState, world: IWorldDispatcher, player: felt252);
 }
 
@@ -34,9 +34,9 @@ trait IActions<TContractState> {
 
 #[starknet::contract]
 mod actions {
-    // Use core lib
-    use poseidon::PoseidonTrait;
-    use hash::HashStateTrait;
+    // Core imports
+
+    use debug::PrintTrait;
 
     // Starknet imports
 
@@ -127,8 +127,7 @@ mod actions {
             assert(!store.is_tower(game, map.index), errors::BUILD_INVALID_POSITION);
 
             // [Effect] Tower
-            let tower_id: u32 = game.tower_count.into()
-                + 1; // Tower id starts at 1, 0 is reserved for null
+            let tower_id: u32 = game.tower_count.into();
             let mut tower = TowerTrait::new(
                 game_id: game.id, id: tower_id, index: map.index, category: category
             );
@@ -140,9 +139,7 @@ mod actions {
             store.set_game(game);
         }
 
-        fn upgrade(
-            self: @ContractState, world: IWorldDispatcher, player: felt252, x: u32, y: u32,
-        ) {
+        fn upgrade(self: @ContractState, world: IWorldDispatcher, player: felt252, tower_id: u32,) {
             // [Setup] Datastore
             let mut store: Store = StoreTrait::new(world);
 
@@ -153,11 +150,10 @@ mod actions {
             assert(!game.over, errors::UPGRADE_INVALID_GAME_STATUS);
 
             // [Effect] Tower
-            let map = MapTrait::from(x, y);
-            let mut tower = store.tower(game, map.index);
+            let mut tower = store.tower(game, tower_id);
 
             // [Check] Tower exists
-            assert(tower.id != 0, errors::UPGRADE_INVALID_POSITION);
+            assert(tower.level != 0, errors::UPGRADE_INVALID_POSITION);
 
             // [Check] Enough gold
             let cost = tower.upgrade_cost();
@@ -174,7 +170,7 @@ mod actions {
             store.set_game(game);
         }
 
-        fn sell(self: @ContractState, world: IWorldDispatcher, player: felt252, x: u32, y: u32,) {
+        fn sell(self: @ContractState, world: IWorldDispatcher, player: felt252, tower_id: u32,) {
             // [Setup] Datastore
             let mut store: Store = StoreTrait::new(world);
 
@@ -185,11 +181,10 @@ mod actions {
             assert(!game.over, errors::SELL_INVALID_GAME_STATUS);
 
             // [Effect] Tower
-            let map = MapTrait::from(x, y);
-            let mut tower = store.tower(game, map.index);
+            let mut tower = store.tower(game, tower_id);
 
             // [Check] Tower exists
-            assert(tower.id != 0, errors::SELL_INVALID_POSITION);
+            assert(tower.level != 0, errors::SELL_INVALID_POSITION);
 
             // [Effect] Sell Tower
             let cost = tower.sell_cost();
@@ -266,6 +261,7 @@ mod actions {
                                 if !tower.is_frozen(tick) && tower.can_attack(mob) {
                                     tower.attack(ref mob, tick);
                                     if mob.health == 0 {
+                                        game.gold += mob.reward;
                                         store.remove_mob(game, mob);
                                     } else {
                                         store.set_mob(mob);
@@ -286,7 +282,7 @@ mod actions {
                     if index == 0 || game.mob_remaining == 0 {
                         break;
                     }
-                    let mob_id = game.mob_count.into() + 1;
+                    let mob_id = game.mob_count.into();
                     // Category is determined by the remaining mobs
                     let elite_rate = if MOB_ELITE_SPAWN_RATE > game.wave {
                         MOB_ELITE_SPAWN_RATE - game.wave

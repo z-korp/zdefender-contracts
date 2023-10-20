@@ -15,3 +15,12 @@ mod helpers {
     mod dice;
     mod map;
 }
+
+#[cfg(test)]
+mod tests {
+    mod setup;
+    mod create;
+    mod build;
+    mod upgrade;
+    mod sell;
+}
