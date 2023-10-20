@@ -28,6 +28,7 @@ trait StoreTrait {
     fn set_game(ref self: Store, game: Game);
     fn set_mob(ref self: Store, mob: Mob);
     fn set_mobs(ref self: Store, mobs: Span<Mob>);
+    fn remove_mob(ref self: Store, game: Game, mob: Mob);
     fn set_tower(ref self: Store, tower: Tower);
     fn set_towers(ref self: Store, towers: Span<Tower>);
     fn remove_tower(ref self: Store, game: Game, tower: Tower);
@@ -115,6 +116,17 @@ impl StoreImpl of StoreTrait {
         };
     }
 
+    fn remove_mob(ref self: Store, game: Game, mob: Mob) {
+        let last_mob_id: u32 = game.mob_count.into();
+        // Skip if the mob id is the latest id
+        if last_mob_id == mob.id {
+            return;
+        }
+        let mut last_mob = self.mob(game, last_mob_id);
+        last_mob.id = mob.id;
+        self.set_mob(last_mob);
+    }
+
     fn set_tower(ref self: Store, tower: Tower) {
         set!(self.world, (tower));
     }
@@ -132,8 +144,12 @@ impl StoreImpl of StoreTrait {
 
     fn remove_tower(ref self: Store, game: Game, tower: Tower) {
         let last_tower_id: u32 = game.tower_count.into();
+        // Skip if the tower id is the latest id
+        if last_tower_id == tower.id {
+            return;
+        }
         let mut last_tower = self.tower(game, last_tower_id);
-        last_tower.index = tower.index;
+        last_tower.id = tower.id;
         self.set_tower(last_tower);
     }
 }

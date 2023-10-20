@@ -16,9 +16,11 @@ struct Map {
 
 trait MapTrait {
     fn new() -> Map;
+    fn load(index: u32) -> Map;
     fn from(x: u32, y: u32) -> Map;
     fn x(ref self: Map) -> u32;
     fn y(ref self: Map) -> u32;
+    fn box(ref self: Map, range: u32) -> (u32, u32, u32, u32);
     fn next(ref self: Map) -> u32;
     fn is_idle(ref self: Map) -> bool;
 }
@@ -27,6 +29,11 @@ impl MapImpl of MapTrait {
     #[inline(always)]
     fn new() -> Map {
         Map { index: SPAWN_INDEX, }
+    }
+
+    #[inline(always)]
+    fn load(index: u32) -> Map {
+        Map { index }
     }
 
     #[inline(always)]
@@ -43,6 +50,31 @@ impl MapImpl of MapTrait {
     #[inline(always)]
     fn y(ref self: Map) -> u32 {
         self.index / MAP_SIZE
+    }
+
+    #[inline(always)]
+    fn box(ref self: Map, range: u32) -> (u32, u32, u32, u32) {
+        let top = if self.y() < range {
+            0
+        } else {
+            self.y() - range
+        };
+        let left = if self.x() < range {
+            0
+        } else {
+            self.x() - range
+        };
+        let bottom = if self.y() + range >= MAP_SIZE {
+            MAP_SIZE - 1
+        } else {
+            self.y() + range
+        };
+        let right = if self.x() + range >= MAP_SIZE {
+            MAP_SIZE - 1
+        } else {
+            self.x() + range
+        };
+        (top, left, bottom, right)
     }
 
     #[inline(always)]

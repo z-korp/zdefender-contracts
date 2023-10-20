@@ -17,10 +17,12 @@ struct Game {
     mob_remaining: u16,
     wave: u8,
     gold: u16,
+    health: u8,
 }
 
 trait GameTrait {
     fn new(key: felt252, id: u32, seed: felt252, name: felt252) -> Game;
+    fn take_damage(ref self: Game);
 }
 
 impl GameImpl of GameTrait {
@@ -36,6 +38,15 @@ impl GameImpl of GameTrait {
             mob_remaining: constants::GAME_INITIAL_MOB_COUNT,
             wave: 0,
             gold: constants::GAME_INITIAL_GOLD,
+            health: constants::GAME_INITIAL_HEALTH,
         }
+    }
+
+    fn take_damage(ref self: Game) {
+        self.health -= if self.health > 0 {
+            1
+        } else {
+            0
+        };
     }
 }
