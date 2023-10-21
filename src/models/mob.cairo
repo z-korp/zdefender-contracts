@@ -21,11 +21,21 @@ const MOB_BOSS_DEFENSE: u32 = 10;
 const MOB_BOSS_REWARD: u16 = 50;
 const MOB_ELITE_SPAWN_RATE: u8 = 13;
 
-#[derive(Drop, PartialEq)]
+#[derive(Serde, Copy, Drop, PartialEq)]
 enum Category {
     Normal,
     Elite,
     Boss,
+}
+
+impl CategoryIntoU8 of Into<Category, u8> {
+    fn into(self: Category) -> u8 {
+        match self {
+            Category::Normal => 0,
+            Category::Elite => 1,
+            Category::Boss => 2,
+        }
+    }
 }
 
 #[derive(Model, Copy, Drop, Serde)]
@@ -36,10 +46,8 @@ struct Mob {
     key: u32,
     id: u32,
     index: u32,
-    previous_index: u32,
-    next_index: u32,
+    category: u8,
     health: u32,
-    max_health: u32,
     speed: u32,
     defense: u32,
     reward: u16,
@@ -58,20 +66,8 @@ impl MobImpl of MobTrait {
         let (health, speed, defense, reward) = MobTrait::stats(category, wave);
         let index = SPAWN_INDEX;
         let mut map = MapTrait::load(index);
-        let next_index = map.next();
         Mob {
-            game_id,
-            key,
-            id,
-            index,
-            previous_index: index,
-            next_index,
-            health,
-            max_health: health,
-            speed,
-            defense,
-            reward,
-            tick
+            game_id, key, id, index, category: category.into(), health, speed, defense, reward, tick
         }
     }
 
@@ -87,10 +83,7 @@ impl MobImpl of MobTrait {
             if map.is_idle() {
                 break true;
             }
-            self.previous_index = self.index;
             self.index = map.next();
-            map = MapTrait::load(self.index);
-            self.next_index = map.next();
             self.tick = tick;
             index -= 1;
         }
@@ -141,10 +134,7 @@ mod tests {
         assert(mob.key == KEY, 'Mob: wrong id');
         assert(mob.id == KEY, 'Mob: wrong id');
         assert(mob.index == super::SPAWN_INDEX, 'Mob: wrong index');
-        assert(mob.previous_index == super::SPAWN_INDEX, 'Mob: wrong previous index');
-        assert(mob.next_index != super::SPAWN_INDEX, 'Mob: wrong next index');
         assert(mob.health == super::MOB_NORMAL_HEALTH, 'Mob: wrong health');
-        assert(mob.max_health == super::MOB_NORMAL_HEALTH, 'Mob: wrong health');
         assert(mob.speed == super::MOB_NORMAL_SPEED, 'Mob: wrong speed');
         assert(mob.defense == super::MOB_NORMAL_DEFENSE, 'Mob: wrong defense');
         assert(mob.reward == super::MOB_NORMAL_REWARD, 'Mob: wrong reward');
