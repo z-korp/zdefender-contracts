@@ -280,15 +280,15 @@ mod actions {
             tick: u32,
             ref store: Store
         ) {
-            // [Effect] Perform mob spawns
+            // [Effect] Perform mob moves
             let mut game: Game = store.game(player);
+            self._move(world, player, tick, ref store, ref game);
+
+            // [Effect] Perform mob spawns
             self._spawn(world, player, tick, ref store, ref game);
 
             // [Effect] Perform tower attacks
             self._attack(world, player, tick, ref store, ref game);
-
-            // [Effect] Perform mob moves
-            self._move(world, player, tick, ref store, ref game);
 
             // [Effect] Update game
             if game.health == 0 {
