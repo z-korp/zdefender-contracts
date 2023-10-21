@@ -41,7 +41,7 @@ fn test_run() {
     systems.player_actions.build(world, ACCOUNT, map.x(), map.y(), TowerCategory::Barbarian);
 
     // [Upgrade] 
-    systems.player_actions.upgrade(world, ACCOUNT, 0);
+    systems.player_actions.upgrade(world, ACCOUNT, map.x(), map.y());
 
     // [Run]
     systems.player_actions.run(world, ACCOUNT);

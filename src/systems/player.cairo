@@ -25,8 +25,8 @@ trait IActions<TContractState> {
         y: u32,
         category: TowerCategory,
     );
-    fn upgrade(self: @TContractState, world: IWorldDispatcher, player: felt252, tower_key: u32,);
-    fn sell(self: @TContractState, world: IWorldDispatcher, player: felt252, tower_key: u32,);
+    fn upgrade(self: @TContractState, world: IWorldDispatcher, player: felt252, x: u32, y: u32,);
+    fn sell(self: @TContractState, world: IWorldDispatcher, player: felt252, x: u32, y: u32,);
     fn run(self: @TContractState, world: IWorldDispatcher, player: felt252);
 }
 
@@ -72,10 +72,12 @@ mod actions {
         const BUILD_INVALID_POSITION: felt252 = 'Build: invalid position';
         const BUILD_NOT_ENOUGH_GOLD: felt252 = 'Build: not enough gold';
         const UPGRADE_INVALID_GAME_STATUS: felt252 = 'Upgrade: invalid game status';
+        const UPGRADE_INVALID_TOWER: felt252 = 'Upgrade: invalid tower';
         const UPGRADE_INVALID_POSITION: felt252 = 'Upgrade: invalid position';
         const UPGRADE_NOT_ENOUGH_GOLD: felt252 = 'Upgrade: not enough gold';
         const SELL_INVALID_GAME_STATUS: felt252 = 'Sell: invalid game status';
         const SELL_INVALID_POSITION: felt252 = 'Sell: invalid position';
+        const SELL_INVALID_TOWER: felt252 = 'Sell: invalid tower';
         const RUN_INVALID_GAME_STATUS: felt252 = 'Run: invalid game status';
     }
 
@@ -157,7 +159,7 @@ mod actions {
 
         #[inline(always)]
         fn upgrade(
-            self: @ContractState, world: IWorldDispatcher, player: felt252, tower_key: u32,
+            self: @ContractState, world: IWorldDispatcher, player: felt252, x: u32, y: u32,
         ) {
             // [Setup] Datastore
             let mut store: Store = StoreTrait::new(world);
@@ -169,7 +171,8 @@ mod actions {
             assert(!game.over, errors::UPGRADE_INVALID_GAME_STATUS);
 
             // [Effect] Tower
-            let mut tower = store.tower(game, tower_key);
+            let mut map = MapTrait::from(x, y);
+            let mut tower = store.find_tower(game, map.index).expect(errors::UPGRADE_INVALID_TOWER);
 
             // [Check] Tower exists
             assert(tower.level != 0, errors::UPGRADE_INVALID_POSITION);
@@ -190,7 +193,7 @@ mod actions {
         }
 
         #[inline(always)]
-        fn sell(self: @ContractState, world: IWorldDispatcher, player: felt252, tower_key: u32,) {
+        fn sell(self: @ContractState, world: IWorldDispatcher, player: felt252, x: u32, y: u32,) {
             // [Setup] Datastore
             let mut store: Store = StoreTrait::new(world);
 
@@ -201,7 +204,8 @@ mod actions {
             assert(!game.over, errors::SELL_INVALID_GAME_STATUS);
 
             // [Effect] Tower
-            let mut tower = store.tower(game, tower_key);
+            let mut map = MapTrait::from(x, y);
+            let mut tower = store.find_tower(game, map.index).expect(errors::SELL_INVALID_TOWER);
 
             // [Check] Tower exists
             assert(tower.level != 0, errors::SELL_INVALID_POSITION);

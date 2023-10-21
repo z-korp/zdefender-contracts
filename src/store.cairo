@@ -24,6 +24,7 @@ trait StoreTrait {
     fn mobs(ref self: Store, game: Game) -> Span<Mob>;
     fn tower(ref self: Store, game: Game, key: u32) -> Tower;
     fn towers(ref self: Store, game: Game) -> Span<Tower>;
+    fn find_tower(ref self: Store, game: Game, index: u32) -> Option<Tower>;
     fn is_tower(ref self: Store, game: Game, index: u32) -> bool;
     fn set_game(ref self: Store, game: Game);
     fn set_mob(ref self: Store, mob: Mob);
@@ -87,17 +88,24 @@ impl StoreImpl of StoreTrait {
         towers.span()
     }
 
-    fn is_tower(ref self: Store, game: Game, index: u32) -> bool {
-        let mut index: u32 = game.tower_count.into();
+    fn find_tower(ref self: Store, game: Game, index: u32) -> Option<Tower> {
+        let mut key: u32 = game.tower_count.into();
         loop {
-            if index == 0 {
-                break false;
+            if key == 0 {
+                break Option::None;
             };
-            index -= 1;
-            let tower = self.tower(game, index);
+            key -= 1;
+            let tower = self.tower(game, key);
             if tower.index == index {
-                break true;
+                break Option::Some(tower);
             };
+        }
+    }
+
+    fn is_tower(ref self: Store, game: Game, index: u32) -> bool {
+        match self.find_tower(game, index) {
+            Option::Some(_) => true,
+            Option::None => false,
         }
     }
 

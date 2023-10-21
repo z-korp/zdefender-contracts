@@ -41,10 +41,10 @@ fn test_sell() {
     systems.player_actions.build(world, ACCOUNT, map.x(), map.y(), TowerCategory::Barbarian);
 
     // [Upgrade]
-    systems.player_actions.upgrade(world, ACCOUNT, 0);
+    systems.player_actions.upgrade(world, ACCOUNT, map.x(), map.y());
 
     // [Sell]
-    systems.player_actions.sell(world, ACCOUNT, 0);
+    systems.player_actions.sell(world, ACCOUNT, map.x(), map.y());
 
     // [Assert] Game
     let game: Game = store.game(ACCOUNT);
