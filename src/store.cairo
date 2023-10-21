@@ -54,7 +54,7 @@ impl StoreImpl of StoreTrait {
     }
 
     fn mobs(ref self: Store, game: Game) -> Span<Mob> {
-        let mut index: u32 = game.mob_count.into();
+        let mut index: u32 = game.mob_alive.into();
         let mut mobs: Array<Mob> = array![];
         loop {
             if index == 0 {

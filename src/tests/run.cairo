@@ -27,7 +27,7 @@ const SEED: felt252 = 'SEED';
 const NAME: felt252 = 'NAME';
 
 #[test]
-#[available_gas(1_000_000_000_000)]
+#[available_gas(10_000_000_000)]
 fn test_run() {
     // [Setup]
     let (world, systems) = setup::spawn_game();
