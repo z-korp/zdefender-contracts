@@ -235,7 +235,7 @@ mod actions {
             assert(!game.over, errors::RUN_INVALID_GAME_STATUS);
 
             // [Check] Game mob remaining
-            assert(game.mob_remaining > 0 || game.mob_count > 0, errors::RUN_INVALID_MOB_STATUS);
+            assert(game.mob_remaining > 0 || game.mob_alive > 0, errors::RUN_INVALID_MOB_STATUS);
 
             // [Effect] Tick loop
             let wave = game.wave;
@@ -263,7 +263,7 @@ mod actions {
             assert(!game.over, errors::ITER_INVALID_GAME_STATUS);
 
             // [Check] Game mob remaining
-            assert(game.mob_remaining > 0 || game.mob_count > 0, errors::ITER_INVALID_MOB_STATUS);
+            assert(game.mob_remaining > 0 || game.mob_alive > 0, errors::ITER_INVALID_MOB_STATUS);
 
             // [Effect] Run iteration
             self._iter(world, player, tick, ref store);
@@ -293,7 +293,7 @@ mod actions {
             // [Effect] Update game
             if game.health == 0 {
                 game.over();
-            } else if game.mob_count == 0 && game.mob_remaining == 0 {
+            } else if game.mob_alive == 0 && game.mob_remaining == 0 {
                 game.next();
             };
             game.tick = tick;
@@ -377,6 +377,7 @@ mod actions {
             );
             store.set_mob(mob);
             game.mob_count += 1;
+            game.mob_alive += 1;
             game.mob_remaining -= 1;
             self.__spawn(world, player, tick, ref store, ref game, index - 1)
         }
@@ -427,7 +428,7 @@ mod actions {
                         if mob.health == 0 {
                             game.gold += mob.reward;
                             store.remove_mob(game, mob);
-                            game.mob_count -= 1;
+                            game.mob_alive -= 1;
                         } else {
                             store.set_mob(mob);
                         };
@@ -465,7 +466,7 @@ mod actions {
                     if status {
                         game.take_damage();
                         store.remove_mob(game, mob);
-                        game.mob_count -= 1;
+                        game.mob_alive -= 1;
                     } else {
                         store.set_mob(mob);
                     };

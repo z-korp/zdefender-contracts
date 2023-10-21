@@ -15,6 +15,7 @@ struct Game {
     tower_count: u8,
     mob_count: u16,
     mob_remaining: u16,
+    mob_alive: u16,
     wave: u8,
     gold: u16,
     health: u8,
@@ -40,6 +41,7 @@ impl GameImpl of GameTrait {
             tower_count: 0,
             mob_count: 0,
             mob_remaining: constants::GAME_INITIAL_MOB_COUNT,
+            mob_alive: 0,
             wave: 1,
             gold: constants::GAME_INITIAL_GOLD,
             health: constants::GAME_INITIAL_HEALTH,
@@ -99,6 +101,7 @@ mod tests {
         assert(game.tower_count == 0, 'Game: wrong tower_count');
         assert(game.mob_count == 0, 'Game: wrong mob_count');
         assert(game.mob_remaining > 0, 'Game: wrong mob_remaining');
+        assert(game.mob_alive == 0, 'Game: wrong mob_alive');
         assert(game.wave == 1, 'Game: wrong wave');
         assert(game.gold > 0, 'Game: wrong gold');
         assert(game.health > 0, 'Game: wrong health');
