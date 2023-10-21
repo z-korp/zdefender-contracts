@@ -43,7 +43,6 @@ fn test_build() {
 
     // [Assert] Tower
     let tower: Tower = store.tower(game, 0);
-    tower.id.print();
     assert(tower.id == 0, 'Tower: wrong id');
     assert(tower.category == TowerCategory::Barbarian.into(), 'Tower: wrong category');
     assert(tower.level == 1, 'Tower: wrong level');
