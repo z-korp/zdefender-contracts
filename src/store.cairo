@@ -135,9 +135,13 @@ impl StoreImpl of StoreTrait {
         if last_mob_key == mob.key {
             return;
         }
+        // Move last mob to the removed mob position
         let mut last_mob = self.mob(game, last_mob_key);
         last_mob.key = mob.key;
         self.set_mob(last_mob);
+        // Delete last mob
+        let keys = array![game.id.into(), last_mob_key.into()];
+        self.world.delete_entity('Mob', keys.span());
     }
 
     #[inline(always)]
