@@ -24,6 +24,8 @@ struct Game {
 trait GameTrait {
     fn new(key: felt252, id: u32, seed: felt252, name: felt252) -> Game;
     fn take_damage(ref self: Game);
+    fn over(ref self: Game);
+    fn next(ref self: Game);
 }
 
 impl GameImpl of GameTrait {
@@ -52,6 +54,18 @@ impl GameImpl of GameTrait {
         } else {
             0
         };
+    }
+
+    #[inline(always)]
+    fn over(ref self: Game) {
+        self.over = true;
+    }
+
+    #[inline(always)]
+    fn next(ref self: Game) {
+        self.wave += 1;
+        // +5% mobs per wave
+        self.mob_count = constants::GAME_INITIAL_MOB_COUNT * (95 + (self.wave * 5)).into() / 100;
     }
 }
 

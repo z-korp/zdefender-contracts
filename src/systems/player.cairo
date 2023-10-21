@@ -292,10 +292,9 @@ mod actions {
 
             // [Effect] Update game
             if game.health == 0 {
-                game.over = true;
+                game.over();
             } else if game.mob_count == 0 && game.mob_remaining == 0 {
-                game.wave += 1;
-                game.mob_remaining = 20;
+                game.next();
             };
             game.tick = tick;
             store.set_game(game);
@@ -316,6 +315,7 @@ mod actions {
             self.__spawn(world, player, tick, ref store, ref game, index);
         }
 
+        #[inline(always)]
         fn _attack(
             self: @ContractState,
             world: IWorldDispatcher,
@@ -325,47 +325,11 @@ mod actions {
             ref game: Game
         ) {
             // [Effect] Perform tower attacks
-            let mut index: u32 = game.tower_count.into();
-            loop {
-                if index == 0 {
-                    break;
-                }
-
-                index -= 1;
-                let mut tower = store.tower(game, index);
-                if !tower.is_idle(tick) {
-                    continue;
-                }
-
-                let mut mobs = store.mobs(game);
-                loop {
-                    match mobs.pop_front() {
-                        Option::Some(snap_mob) => {
-                            let mut mob = *snap_mob;
-                            if tower.can_attack(mob, tick) {
-                                let damage = tower.attack(ref mob, tick);
-                                if mob.health == 0 {
-                                    game.gold += mob.reward;
-                                    store.remove_mob(game, mob);
-                                    game.mob_count -= 1;
-                                } else {
-                                    store.set_mob(mob);
-                                };
-                                store.set_tower(tower);
-
-                                // [Event] Hit
-                                let hit = Hit { tick, from: tower.id, to: mob.id, damage, };
-                                emit!(world, hit);
-                            };
-                        },
-                        Option::None => {
-                            break;
-                        },
-                    };
-                };
-            };
+            let mut towers = store.towers(game);
+            self.__attack(world, player, tick, ref store, ref game, ref towers);
         }
 
+        #[inline(always)]
         fn _move(
             self: @ContractState,
             world: IWorldDispatcher,
@@ -376,25 +340,7 @@ mod actions {
         ) {
             // [Effect] Perform mob moves
             let mut mobs = store.mobs(game);
-            loop {
-                match mobs.pop_front() {
-                    Option::Some(snap_mob) => {
-                        let mut mob = *snap_mob;
-                        let status = mob.move(tick);
-                        // [Check] Mob reached castle
-                        if status {
-                            game.take_damage();
-                            store.remove_mob(game, mob);
-                            game.mob_count -= 1;
-                        } else {
-                            store.set_mob(mob);
-                        };
-                    },
-                    Option::None => {
-                        break;
-                    },
-                };
-            };
+            self.__move(world, player, tick, ref store, ref game, ref mobs);
         }
     }
 
@@ -442,42 +388,93 @@ mod actions {
             tick: u32,
             ref store: Store,
             ref game: Game,
-            index: u32
+            ref towers: Span<Tower>
         ) {
-            if index == 0 {
-                return;
-            }
-            let mut tower = store.tower(game, index);
-            if !tower.is_idle(tick) {
-                return self.__attack(world, player, tick, ref store, ref game, index - 1);
-            }
-            let mut mobs = store.mobs(game);
-            loop {
-                match mobs.pop_front() {
-                    Option::Some(snap_mob) => {
-                        let mut mob = *snap_mob;
-                        if tower.can_attack(mob, tick) {
-                            let damage = tower.attack(ref mob, tick);
-                            if mob.health == 0 {
-                                game.gold += mob.reward;
-                                store.remove_mob(game, mob);
-                                game.mob_count -= 1;
-                            } else {
-                                store.set_mob(mob);
-                            };
-                            store.set_tower(tower);
-
-                            // [Event] Hit
-                            let hit = Hit { tick, from: tower.id, to: mob.id, damage, };
-                            emit!(world, hit);
-                        };
-                    },
-                    Option::None => {
-                        break;
-                    },
-                };
+            match towers.pop_front() {
+                Option::Some(snap_tower) => {
+                    let mut tower = *snap_tower;
+                    if !tower.is_idle(tick) {
+                        return self.__attack(world, player, tick, ref store, ref game, ref towers);
+                    }
+                    let mut mobs = store.mobs(game);
+                    self
+                        .__attack_mob(
+                            world, player, tick, ref store, ref game, ref tower, ref mobs
+                        );
+                    return self.__attack(world, player, tick, ref store, ref game, ref towers);
+                },
+                Option::None => {
+                    return;
+                },
             };
-            self.__attack(world, player, tick, ref store, ref game, index - 1);
+        }
+
+        fn __attack_mob(
+            self: @ContractState,
+            world: IWorldDispatcher,
+            player: felt252,
+            tick: u32,
+            ref store: Store,
+            ref game: Game,
+            ref tower: Tower,
+            ref mobs: Span<Mob>
+        ) {
+            match mobs.pop_front() {
+                Option::Some(snap_mob) => {
+                    let mut mob = *snap_mob;
+                    if tower.can_attack(mob, tick) {
+                        let damage = tower.attack(ref mob, tick);
+                        if mob.health == 0 {
+                            game.gold += mob.reward;
+                            store.remove_mob(game, mob);
+                            game.mob_count -= 1;
+                        } else {
+                            store.set_mob(mob);
+                        };
+                        store.set_tower(tower);
+
+                        // [Event] Hit
+                        let hit = Hit { tick, from: tower.id, to: mob.id, damage, };
+                        emit!(world, hit);
+                    };
+                    return self
+                        .__attack_mob(
+                            world, player, tick, ref store, ref game, ref tower, ref mobs
+                        );
+                },
+                Option::None => {
+                    return;
+                },
+            };
+        }
+
+        fn __move(
+            self: @ContractState,
+            world: IWorldDispatcher,
+            player: felt252,
+            tick: u32,
+            ref store: Store,
+            ref game: Game,
+            ref mobs: Span<Mob>
+        ) {
+            match mobs.pop_front() {
+                Option::Some(snap_mob) => {
+                    let mut mob = *snap_mob;
+                    let status = mob.move(tick);
+                    // [Check] Mob reached castle
+                    if status {
+                        game.take_damage();
+                        store.remove_mob(game, mob);
+                        game.mob_count -= 1;
+                    } else {
+                        store.set_mob(mob);
+                    };
+                    return self.__move(world, player, tick, ref store, ref game, ref mobs);
+                },
+                Option::None => {
+                    return;
+                },
+            };
         }
     }
 }

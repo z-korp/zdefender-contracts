@@ -23,5 +23,6 @@ mod tests {
     mod build;
     mod upgrade;
     mod sell;
+    mod iter;
     mod run;
 }
