@@ -43,13 +43,13 @@ struct Mob {
 }
 
 trait MobTrait {
-    fn new(game_id: u32, id: u32, category: Category) -> Mob;
+    fn new(game_id: u32, id: u32, category: Category, tick: u32) -> Mob;
     fn move(ref self: Mob, tick: u32) -> bool;
 }
 
 impl MobImpl of MobTrait {
     #[inline(always)]
-    fn new(game_id: u32, id: u32, category: Category) -> Mob {
+    fn new(game_id: u32, id: u32, category: Category, tick: u32) -> Mob {
         let (health, speed, defense, reward) = match category {
             Category::Normal => {
                 (MOB_NORMAL_HEALTH, MOB_NORMAL_SPEED, MOB_NORMAL_DEFENSE, MOB_NORMAL_REWARD)
@@ -61,7 +61,7 @@ impl MobImpl of MobTrait {
                 (MOB_BOSS_HEALTH, MOB_BOSS_SPEED, MOB_BOSS_DEFENSE, MOB_BOSS_REWARD)
             },
         };
-        Mob { game_id, id, index: SPAWN_INDEX, health, speed, defense, reward, tick: 0 }
+        Mob { game_id, id, index: SPAWN_INDEX, health, speed, defense, reward, tick }
     }
 
     fn move(ref self: Mob, tick: u32) -> bool {
@@ -97,11 +97,12 @@ mod tests {
 
     const GAME_ID: u32 = 0;
     const ID: u32 = 0;
+    const TICK: u32 = 0;
 
     #[test]
     #[available_gas(2000000)]
     fn test_mob_new() {
-        let mut mob = MobTrait::new(GAME_ID, ID, Category::Normal);
+        let mut mob = MobTrait::new(GAME_ID, ID, Category::Normal, TICK);
         assert(mob.game_id == GAME_ID, 'Mob: wrong game id');
         assert(mob.id == ID, 'Mob: wrong id');
         assert(mob.index == super::SPAWN_INDEX, 'Mob: wrong index');
@@ -115,7 +116,7 @@ mod tests {
     #[test]
     #[available_gas(2000000)]
     fn test_mob_move() {
-        let mut mob = MobTrait::new(GAME_ID, ID, Category::Normal);
+        let mut mob = MobTrait::new(GAME_ID, ID, Category::Normal, TICK);
         let index = mob.index;
         let tick = 1;
         let status = mob.move(tick);

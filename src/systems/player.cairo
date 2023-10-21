@@ -260,7 +260,9 @@ mod actions {
                     } else {
                         MobCategory::Normal
                     };
-                    let mut mob = MobTrait::new(game_id: game.id, id: mob_id, category: category);
+                    let mut mob = MobTrait::new(
+                        game_id: game.id, id: mob_id, category: category, tick: tick,
+                    );
                     store.set_mob(mob);
                     game.mob_count += 1;
                     game.mob_remaining -= 1;
