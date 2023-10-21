@@ -23,8 +23,8 @@ private_key = "0x1800000000300000180000000000030000000000003006001800006600"
 # world_address = "0x4e1fde3268e5fd9d18b89d6f08ce42a8ae7098e44af596bad689ceb50ad29ba"
 
 # Madara testnet
-# rpc_url = "https://api.cartridge.gg/x/zknight/katana"
-# account_address = "0x79b20ff02de1b0e7443abb3a1e0cdcadd073692caf9bc9b16c872f6742a0c6e"
-# private_key = "0x491f3baf5e582b1baaa8a77525ede24ccde65174348eaa41036d55d2a681f54"
-# world_address = "0x530d86055a808e82278eac65a74312ef0a672c9e61e7fd018387fd5b38cd27e"
+# rpc_url = "https://api.cartridge.gg/x/zdefender/katana"
+# account_address = "0x3ce7cbb5d8ed56fca0e6b602d0ad249ea393b096675aaaef496f9b4a1121aab"
+# private_key = "0x1936d3fa8ba81d2c8744868afb7b48eb61fc96db7a7e008be1176acfb3cd2a0"
+# world_address = "0x4e1fde3268e5fd9d18b89d6f08ce42a8ae7098e44af596bad689ceb50ad29ba"
 # torii = https://api.cartridge.gg/x/zknight/torii/graphql

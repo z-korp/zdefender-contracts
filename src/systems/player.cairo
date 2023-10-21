@@ -430,12 +430,11 @@ mod actions {
                     let mut mob = *snap_mob;
                     if tower.can_attack(mob, tick) {
                         let damage = tower.attack(ref mob, tick);
+                        store.set_mob(mob);
                         if mob.health == 0 {
                             game.gold += mob.reward;
                             store.remove_mob(game, mob);
                             game.mob_alive -= 1;
-                        } else {
-                            store.set_mob(mob);
                         };
                         store.set_tower(tower);
 
