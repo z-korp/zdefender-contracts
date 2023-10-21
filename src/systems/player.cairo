@@ -25,8 +25,8 @@ trait IActions<TContractState> {
         y: u32,
         category: TowerCategory,
     );
-    fn upgrade(self: @TContractState, world: IWorldDispatcher, player: felt252, tower_id: u32,);
-    fn sell(self: @TContractState, world: IWorldDispatcher, player: felt252, tower_id: u32,);
+    fn upgrade(self: @TContractState, world: IWorldDispatcher, player: felt252, tower_key: u32,);
+    fn sell(self: @TContractState, world: IWorldDispatcher, player: felt252, tower_key: u32,);
     fn run(self: @TContractState, world: IWorldDispatcher, player: felt252);
 }
 
@@ -145,7 +145,7 @@ mod actions {
             // [Effect] Tower
             let tower_id: u32 = game.tower_count.into();
             let mut tower = TowerTrait::new(
-                game_id: game.id, id: tower_id, index: map.index, category: category
+                game_id: game.id, key: tower_id, index: map.index, category: category
             );
             store.set_tower(tower);
 
@@ -156,7 +156,9 @@ mod actions {
         }
 
         #[inline(always)]
-        fn upgrade(self: @ContractState, world: IWorldDispatcher, player: felt252, tower_id: u32,) {
+        fn upgrade(
+            self: @ContractState, world: IWorldDispatcher, player: felt252, tower_key: u32,
+        ) {
             // [Setup] Datastore
             let mut store: Store = StoreTrait::new(world);
 
@@ -167,7 +169,7 @@ mod actions {
             assert(!game.over, errors::UPGRADE_INVALID_GAME_STATUS);
 
             // [Effect] Tower
-            let mut tower = store.tower(game, tower_id);
+            let mut tower = store.tower(game, tower_key);
 
             // [Check] Tower exists
             assert(tower.level != 0, errors::UPGRADE_INVALID_POSITION);
@@ -188,7 +190,7 @@ mod actions {
         }
 
         #[inline(always)]
-        fn sell(self: @ContractState, world: IWorldDispatcher, player: felt252, tower_id: u32,) {
+        fn sell(self: @ContractState, world: IWorldDispatcher, player: felt252, tower_key: u32,) {
             // [Setup] Datastore
             let mut store: Store = StoreTrait::new(world);
 
@@ -199,7 +201,7 @@ mod actions {
             assert(!game.over, errors::SELL_INVALID_GAME_STATUS);
 
             // [Effect] Tower
-            let mut tower = store.tower(game, tower_id);
+            let mut tower = store.tower(game, tower_key);
 
             // [Check] Tower exists
             assert(tower.level != 0, errors::SELL_INVALID_POSITION);

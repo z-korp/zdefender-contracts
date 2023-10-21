@@ -20,9 +20,9 @@ struct Store {
 trait StoreTrait {
     fn new(world: IWorldDispatcher) -> Store;
     fn game(ref self: Store, key: felt252) -> Game;
-    fn mob(ref self: Store, game: Game, id: u32) -> Mob;
+    fn mob(ref self: Store, game: Game, key: u32) -> Mob;
     fn mobs(ref self: Store, game: Game) -> Span<Mob>;
-    fn tower(ref self: Store, game: Game, id: u32) -> Tower;
+    fn tower(ref self: Store, game: Game, key: u32) -> Tower;
     fn towers(ref self: Store, game: Game) -> Span<Tower>;
     fn is_tower(ref self: Store, game: Game, index: u32) -> bool;
     fn set_game(ref self: Store, game: Game);
@@ -47,8 +47,8 @@ impl StoreImpl of StoreTrait {
     }
 
     #[inline(always)]
-    fn mob(ref self: Store, game: Game, id: u32) -> Mob {
-        let mob_key = (game.id, id);
+    fn mob(ref self: Store, game: Game, key: u32) -> Mob {
+        let mob_key = (game.id, key);
         get!(self.world, mob_key.into(), (Mob))
     }
 
@@ -66,8 +66,8 @@ impl StoreImpl of StoreTrait {
     }
 
     #[inline(always)]
-    fn tower(ref self: Store, game: Game, id: u32) -> Tower {
-        let tower_key = (game.id, id);
+    fn tower(ref self: Store, game: Game, key: u32) -> Tower {
+        let tower_key = (game.id, key);
         get!(self.world, tower_key.into(), (Tower))
     }
 
@@ -80,7 +80,7 @@ impl StoreImpl of StoreTrait {
             };
             index -= 1;
             let tower = self.tower(game, index);
-            if tower.id != 0 {
+            if tower.key != 0 {
                 towers.append(tower);
             };
         };
@@ -124,13 +124,13 @@ impl StoreImpl of StoreTrait {
 
     #[inline(always)]
     fn remove_mob(ref self: Store, game: Game, mob: Mob) {
-        let last_mob_id: u32 = game.mob_count.into();
-        // Skip if the mob id is the latest id
-        if last_mob_id == mob.id {
+        let last_mob_key: u32 = game.mob_count.into();
+        // Skip if the mob key is the latest key
+        if last_mob_key == mob.key {
             return;
         }
-        let mut last_mob = self.mob(game, last_mob_id);
-        last_mob.id = mob.id;
+        let mut last_mob = self.mob(game, last_mob_key);
+        last_mob.key = mob.key;
         self.set_mob(last_mob);
     }
 
@@ -152,13 +152,13 @@ impl StoreImpl of StoreTrait {
 
     #[inline(always)]
     fn remove_tower(ref self: Store, game: Game, tower: Tower) {
-        let last_tower_id: u32 = game.tower_count.into();
-        // Skip if the tower id is the latest id
-        if last_tower_id == tower.id {
+        let last_tower_key: u32 = game.tower_count.into();
+        // Skip if the tower key is the latest key
+        if last_tower_key == tower.key {
             return;
         }
-        let mut last_tower = self.tower(game, last_tower_id);
-        last_tower.id = tower.id;
+        let mut last_tower = self.tower(game, last_tower_key);
+        last_tower.key = tower.key;
         self.set_tower(last_tower);
     }
 }

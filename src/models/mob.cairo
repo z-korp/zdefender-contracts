@@ -33,6 +33,7 @@ struct Mob {
     #[key]
     game_id: u32,
     #[key]
+    key: u32,
     id: u32,
     index: u32,
     health: u32,
@@ -61,7 +62,7 @@ impl MobImpl of MobTrait {
                 (MOB_BOSS_HEALTH, MOB_BOSS_SPEED, MOB_BOSS_DEFENSE, MOB_BOSS_REWARD)
             },
         };
-        Mob { game_id, id, index: SPAWN_INDEX, health, speed, defense, reward, tick }
+        Mob { game_id, key: id, id, index: SPAWN_INDEX, health, speed, defense, reward, tick }
     }
 
     fn move(ref self: Mob, tick: u32) -> bool {
@@ -96,15 +97,16 @@ mod tests {
     // Constants
 
     const GAME_ID: u32 = 0;
-    const ID: u32 = 0;
+    const KEY: u32 = 0;
     const TICK: u32 = 0;
 
     #[test]
     #[available_gas(2000000)]
     fn test_mob_new() {
-        let mut mob = MobTrait::new(GAME_ID, ID, Category::Normal, TICK);
+        let mut mob = MobTrait::new(GAME_ID, KEY, Category::Normal, TICK);
         assert(mob.game_id == GAME_ID, 'Mob: wrong game id');
-        assert(mob.id == ID, 'Mob: wrong id');
+        assert(mob.key == KEY, 'Mob: wrong id');
+        assert(mob.id == KEY, 'Mob: wrong id');
         assert(mob.index == super::SPAWN_INDEX, 'Mob: wrong index');
         assert(mob.health == super::MOB_NORMAL_HEALTH, 'Mob: wrong health');
         assert(mob.speed == super::MOB_NORMAL_SPEED, 'Mob: wrong speed');
@@ -116,7 +118,7 @@ mod tests {
     #[test]
     #[available_gas(2000000)]
     fn test_mob_move() {
-        let mut mob = MobTrait::new(GAME_ID, ID, Category::Normal, TICK);
+        let mut mob = MobTrait::new(GAME_ID, KEY, Category::Normal, TICK);
         let index = mob.index;
         let tick = 1;
         let status = mob.move(tick);
