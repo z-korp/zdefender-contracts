@@ -36,6 +36,8 @@ struct Mob {
     key: u32,
     id: u32,
     index: u32,
+    previous_index: u32,
+    next_index: u32,
     health: u32,
     speed: u32,
     defense: u32,
@@ -62,7 +64,22 @@ impl MobImpl of MobTrait {
                 (MOB_BOSS_HEALTH, MOB_BOSS_SPEED, MOB_BOSS_DEFENSE, MOB_BOSS_REWARD)
             },
         };
-        Mob { game_id, key: id, id, index: SPAWN_INDEX, health, speed, defense, reward, tick }
+        let index = SPAWN_INDEX;
+        let mut map = MapTrait::load(index);
+        let next_index = map.next();
+        Mob {
+            game_id,
+            key: id,
+            id,
+            index,
+            previous_index: index,
+            next_index,
+            health,
+            speed,
+            defense,
+            reward,
+            tick
+        }
     }
 
     fn move(ref self: Mob, tick: u32) -> bool {
@@ -77,7 +94,10 @@ impl MobImpl of MobTrait {
             if index == 0 {
                 break false;
             }
+            self.previous_index = self.index;
             self.index = map.next();
+            map = MapTrait::load(self.index);
+            self.next_index = map.next();
             self.tick = tick;
             index -= 1;
         }
@@ -108,6 +128,8 @@ mod tests {
         assert(mob.key == KEY, 'Mob: wrong id');
         assert(mob.id == KEY, 'Mob: wrong id');
         assert(mob.index == super::SPAWN_INDEX, 'Mob: wrong index');
+        assert(mob.previous_index == super::SPAWN_INDEX, 'Mob: wrong previous index');
+        assert(mob.next_index != super::SPAWN_INDEX, 'Mob: wrong next index');
         assert(mob.health == super::MOB_NORMAL_HEALTH, 'Mob: wrong health');
         assert(mob.speed == super::MOB_NORMAL_SPEED, 'Mob: wrong speed');
         assert(mob.defense == super::MOB_NORMAL_DEFENSE, 'Mob: wrong defense');
