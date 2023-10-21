@@ -102,6 +102,7 @@ impl StoreImpl of StoreTrait {
         }
     }
 
+    #[inline(always)]
     fn is_tower(ref self: Store, game: Game, index: u32) -> bool {
         match self.find_tower(game, index) {
             Option::Some(_) => true,
