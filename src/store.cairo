@@ -21,9 +21,9 @@ trait StoreTrait {
     fn new(world: IWorldDispatcher) -> Store;
     fn game(ref self: Store, key: felt252) -> Game;
     fn mob(ref self: Store, game: Game, key: u32) -> Mob;
-    fn mobs(ref self: Store, game: Game) -> Span<Mob>;
+    fn mobs(ref self: Store, game: Game) -> Array<Mob>;
     fn tower(ref self: Store, game: Game, key: u32) -> Tower;
-    fn towers(ref self: Store, game: Game) -> Span<Tower>;
+    fn towers(ref self: Store, game: Game) -> Array<Tower>;
     fn find_tower(ref self: Store, game: Game, index: u32) -> Option<Tower>;
     fn is_tower(ref self: Store, game: Game, index: u32) -> bool;
     fn set_game(ref self: Store, game: Game);
@@ -53,7 +53,7 @@ impl StoreImpl of StoreTrait {
         get!(self.world, mob_key.into(), (Mob))
     }
 
-    fn mobs(ref self: Store, game: Game) -> Span<Mob> {
+    fn mobs(ref self: Store, game: Game) -> Array<Mob> {
         let mut index: u32 = game.mob_count.into();
         let mut mobs: Array<Mob> = array![];
         loop {
@@ -66,7 +66,7 @@ impl StoreImpl of StoreTrait {
                 mobs.append(mob);
             };
         };
-        mobs.span()
+        mobs
     }
 
     #[inline(always)]
@@ -75,7 +75,7 @@ impl StoreImpl of StoreTrait {
         get!(self.world, tower_key.into(), (Tower))
     }
 
-    fn towers(ref self: Store, game: Game) -> Span<Tower> {
+    fn towers(ref self: Store, game: Game) -> Array<Tower> {
         let mut index: u32 = game.tower_count.into();
         let mut towers: Array<Tower> = array![];
         loop {
@@ -85,7 +85,7 @@ impl StoreImpl of StoreTrait {
             index -= 1;
             towers.append(self.tower(game, index));
         };
-        towers.span()
+        towers
     }
 
     fn find_tower(ref self: Store, game: Game, index: u32) -> Option<Tower> {

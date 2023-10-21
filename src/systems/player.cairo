@@ -37,6 +37,7 @@ trait IActions<TContractState> {
 mod actions {
     // Core imports
 
+    use core::array::ArrayTrait;
     use core::array::SpanTrait;
     use debug::PrintTrait;
 
@@ -240,6 +241,7 @@ mod actions {
             // [Effect] Tick loop
             let mut dice = DiceTrait::new(game.seed, game.wave, 0);
             let mut towers = store.towers(game);
+            let mut mobs = store.mobs(game);
             let wave = game.wave;
             let mut tick = 1;
             loop {
@@ -248,7 +250,10 @@ mod actions {
                 if game.health == 0 || game.wave != wave {
                     break;
                 }
-                self._iter(world, player, tick, ref store, ref game, ref dice, ref towers);
+                self
+                    ._iter(
+                        world, player, tick, ref store, ref game, ref dice, ref towers, ref mobs
+                    );
                 tick += 1;
             };
 
@@ -270,7 +275,8 @@ mod actions {
             // [Effect] Run iteration
             let mut dice = DiceTrait::new(game.seed, game.wave, tick);
             let mut towers = store.towers(game);
-            self._iter(world, player, tick, ref store, ref game, ref dice, ref towers);
+            let mut mobs = store.mobs(game);
+            self._iter(world, player, tick, ref store, ref game, ref dice, ref towers, ref mobs);
         }
     }
 
@@ -285,17 +291,21 @@ mod actions {
             ref store: Store,
             ref game: Game,
             ref dice: Dice,
-            ref towers: Span<Tower>,
+            ref towers: Array<Tower>,
+            ref mobs: Array<Mob>,
         ) {
             // [Effect] Perform tower attacks
-            self.__attack(world, player, tick, ref store, ref game, ref towers, towers.len());
+            self
+                ._attack(
+                    world, player, tick, ref store, ref game, ref towers, towers.len(), ref mobs
+                );
 
             // [Effect] Perform mob moves
-            let mut mobs = store.mobs(game);
-            self.__move(world, player, tick, ref store, ref game, ref mobs);
+            self._move(world, player, tick, ref store, ref game, ref mobs, mobs.len());
 
             // [Effect] Perform mob spawns
-            self._spawn(world, player, tick, ref store, ref game, ref dice);
+            // Roll a dice to determine how many mob will spawn
+            self._spawn(world, player, tick, ref store, ref game, dice.roll(), ref mobs);
 
             // [Effect] Update game
             if game.health == 0 {
@@ -307,47 +317,34 @@ mod actions {
             store.set_game(game);
         }
 
-        #[inline(always)]
-        fn _spawn(
+        fn _attack(
             self: @ContractState,
             world: IWorldDispatcher,
             player: felt252,
             tick: u32,
             ref store: Store,
             ref game: Game,
-            ref dice: Dice,
-        ) {
-            // [Effect] Perform mob spawns
-            let mut index = dice.roll(); // Roll a dice to determine how many mob will spawn
-            self.__spawn(world, player, tick, ref store, ref game, index);
-        }
-    }
-
-    #[generate_trait]
-    impl Private of PrivateTrait {
-        fn __attack(
-            self: @ContractState,
-            world: IWorldDispatcher,
-            player: felt252,
-            tick: u32,
-            ref store: Store,
-            ref game: Game,
-            ref towers: Span<Tower>,
+            ref towers: Array<Tower>,
             mut index: u32,
+            ref mobs: Array<Mob>,
         ) {
             if index == 0 {
                 return;
             }
             index -= 1;
-            let mut tower = *towers.at(index);
+            let mut tower = towers.pop_front().unwrap();
             if tower.is_idle(tick) {
-                let mut mobs = store.mobs(game);
-                self.__attack_mob(world, player, tick, ref store, ref game, ref tower, ref mobs);
+                self
+                    ._attack_mob(
+                        world, player, tick, ref store, ref game, ref tower, ref mobs, mobs.len()
+                    );
             }
-            return self.__attack(world, player, tick, ref store, ref game, ref towers, index);
+            towers.append(tower);
+            return self
+                ._attack(world, player, tick, ref store, ref game, ref towers, index, ref mobs);
         }
 
-        fn __attack_mob(
+        fn _attack_mob(
             self: @ContractState,
             world: IWorldDispatcher,
             player: felt252,
@@ -355,17 +352,24 @@ mod actions {
             ref store: Store,
             ref game: Game,
             ref tower: Tower,
-            ref mobs: Span<Mob>,
+            ref mobs: Array<Mob>,
+            mut index: u32,
         ) {
+            if index == 0 {
+                return;
+            }
+            index -= 1;
             match mobs.pop_front() {
-                Option::Some(snap_mob) => {
-                    if tower.can_attack(snap_mob, tick) {
-                        let mut mob = *snap_mob;
+                Option::Some(mob) => {
+                    if tower.can_attack(@mob, tick) {
+                        let mut mob = mob;
                         let damage = tower.attack(ref mob, tick);
                         store.set_mob(mob);
                         if mob.health == 0 {
                             game.gold += mob.reward;
                             game.mob_alive -= 1;
+                        } else {
+                            mobs.append(mob);
                         };
                         store.set_tower(tower);
 
@@ -376,8 +380,8 @@ mod actions {
                         emit!(world, hit);
                     };
                     return self
-                        .__attack_mob(
-                            world, player, tick, ref store, ref game, ref tower, ref mobs
+                        ._attack_mob(
+                            world, player, tick, ref store, ref game, ref tower, ref mobs, index
                         );
                 },
                 Option::None => {
@@ -386,26 +390,33 @@ mod actions {
             };
         }
 
-        fn __move(
+        fn _move(
             self: @ContractState,
             world: IWorldDispatcher,
             player: felt252,
             tick: u32,
             ref store: Store,
             ref game: Game,
-            ref mobs: Span<Mob>,
+            ref mobs: Array<Mob>,
+            mut index: u32,
         ) {
+            if index == 0 {
+                return;
+            }
+            index -= 1;
             match mobs.pop_front() {
-                Option::Some(snap_mob) => {
-                    let mut mob = *snap_mob;
+                Option::Some(mob) => {
+                    let mut mob = mob;
                     let status = mob.move(tick);
                     store.set_mob(mob);
                     // [Check] Mob reached castle
                     if status {
                         game.take_damage();
                         game.mob_alive -= 1;
-                    };
-                    return self.__move(world, player, tick, ref store, ref game, ref mobs);
+                    } else {
+                        mobs.append(mob);
+                    }
+                    return self._move(world, player, tick, ref store, ref game, ref mobs, index);
                 },
                 Option::None => {
                     return;
@@ -413,14 +424,15 @@ mod actions {
             };
         }
 
-        fn __spawn(
+        fn _spawn(
             self: @ContractState,
             world: IWorldDispatcher,
             player: felt252,
             tick: u32,
             ref store: Store,
             ref game: Game,
-            index: u8
+            index: u8,
+            ref mobs: Array<Mob>,
         ) {
             if index == 0 || game.mob_remaining == 0 {
                 return;
@@ -449,10 +461,11 @@ mod actions {
                 wave: game.wave
             );
             store.set_mob(mob);
+            mobs.append(mob);
             game.mob_count += 1;
             game.mob_alive += 1;
             game.mob_remaining -= 1;
-            self.__spawn(world, player, tick, ref store, ref game, index - 1)
+            self._spawn(world, player, tick, ref store, ref game, index - 1, ref mobs)
         }
     }
 }
