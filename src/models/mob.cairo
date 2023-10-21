@@ -82,6 +82,7 @@ impl MobImpl of MobTrait {
             // [Break] Mob is reaching the player castle
             let mut map = MapTrait::load(self.index);
             if map.is_idle() {
+                self.health = 0;
                 break true;
             }
             self.index = map.next();

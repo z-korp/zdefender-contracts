@@ -365,7 +365,6 @@ mod actions {
                         store.set_mob(mob);
                         if mob.health == 0 {
                             game.gold += mob.reward;
-                            store.remove_mob(game, mob);
                             game.mob_alive -= 1;
                         };
                         store.set_tower(tower);
@@ -400,13 +399,11 @@ mod actions {
                 Option::Some(snap_mob) => {
                     let mut mob = *snap_mob;
                     let status = mob.move(tick);
+                    store.set_mob(mob);
                     // [Check] Mob reached castle
                     if status {
                         game.take_damage();
-                        store.remove_mob(game, mob);
                         game.mob_alive -= 1;
-                    } else {
-                        store.set_mob(mob);
                     };
                     return self.__move(world, player, tick, ref store, ref game, ref mobs);
                 },

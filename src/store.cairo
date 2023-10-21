@@ -54,14 +54,17 @@ impl StoreImpl of StoreTrait {
     }
 
     fn mobs(ref self: Store, game: Game) -> Span<Mob> {
-        let mut index: u32 = game.mob_alive.into();
+        let mut index: u32 = game.mob_count.into();
         let mut mobs: Array<Mob> = array![];
         loop {
             if index == 0 {
                 break;
             };
             index -= 1;
-            mobs.append(self.mob(game, index));
+            let mob = self.mob(game, index);
+            if mob.health > 0 {
+                mobs.append(mob);
+            };
         };
         mobs.span()
     }
@@ -139,9 +142,6 @@ impl StoreImpl of StoreTrait {
         let mut last_mob = self.mob(game, last_mob_key);
         last_mob.key = mob.key;
         self.set_mob(last_mob);
-        // Delete last mob
-        let keys = array![game.id.into(), last_mob_key.into()];
-        self.world.delete_entity('Mob', keys.span());
     }
 
     #[inline(always)]
