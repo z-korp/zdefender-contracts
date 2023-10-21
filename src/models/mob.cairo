@@ -29,6 +29,7 @@ enum Category {
 }
 
 impl CategoryIntoU8 of Into<Category, u8> {
+    #[inline(always)]
     fn into(self: Category) -> u8 {
         match self {
             Category::Normal => 0,
@@ -89,6 +90,7 @@ impl MobImpl of MobTrait {
         }
     }
 
+    #[inline(always)]
     fn stats(category: Category, wave: u8) -> (u32, u32, u32, u16) {
         let (health, speed, defense, reward) = match category {
             Category::Normal => {
