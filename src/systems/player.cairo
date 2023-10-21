@@ -228,7 +228,7 @@ mod actions {
             let mut store: Store = StoreTrait::new(world);
 
             // [Effect] Game entity
-            let mut game: Game = store.game(player);
+            let game: Game = store.game(player);
 
             // [Check] Game is not over
             assert(!game.over, errors::RUN_INVALID_GAME_STATUS);
@@ -237,15 +237,16 @@ mod actions {
             assert(game.mob_remaining > 0 || game.mob_alive > 0, errors::RUN_INVALID_MOB_STATUS);
 
             // [Effect] Tick loop
+            let mut towers = store.towers(game);
             let wave = game.wave;
             let mut tick = 1;
             loop {
                 // [Check] Game or wave is over
-                let game: Game = store.game(player);
+                let mut game: Game = store.game(player);
                 if game.health == 0 || game.wave != wave {
                     break;
                 }
-                self._iter(world, player, tick, ref store);
+                self._iter(world, player, tick, ref store, ref game, ref towers);
                 tick += 1;
             };
 
@@ -258,14 +259,15 @@ mod actions {
             let mut store: Store = StoreTrait::new(world);
 
             // [Check] Game is not over
-            let game: Game = store.game(player);
+            let mut game: Game = store.game(player);
             assert(!game.over, errors::ITER_INVALID_GAME_STATUS);
 
             // [Check] Game mob remaining
             assert(game.mob_remaining > 0 || game.mob_alive > 0, errors::ITER_INVALID_MOB_STATUS);
 
             // [Effect] Run iteration
-            self._iter(world, player, tick, ref store);
+            let mut towers = store.towers(game);
+            self._iter(world, player, tick, ref store, ref game, ref towers);
         }
     }
 
@@ -277,17 +279,18 @@ mod actions {
             world: IWorldDispatcher,
             player: felt252,
             tick: u32,
-            ref store: Store
+            ref store: Store,
+            ref game: Game,
+            ref towers: Span<Tower>,
         ) {
+            // [Effect] Perform tower attacks
+            self._attack(world, player, tick, ref store, ref game, ref towers);
+
             // [Effect] Perform mob moves
-            let mut game: Game = store.game(player);
             self._move(world, player, tick, ref store, ref game);
 
             // [Effect] Perform mob spawns
             self._spawn(world, player, tick, ref store, ref game);
-
-            // [Effect] Perform tower attacks
-            self._attack(world, player, tick, ref store, ref game);
 
             // [Effect] Update game
             if game.health == 0 {
@@ -297,6 +300,20 @@ mod actions {
             };
             game.tick = tick;
             store.set_game(game);
+        }
+
+        #[inline(always)]
+        fn _move(
+            self: @ContractState,
+            world: IWorldDispatcher,
+            player: felt252,
+            tick: u32,
+            ref store: Store,
+            ref game: Game
+        ) {
+            // [Effect] Perform mob moves
+            let mut mobs = store.mobs(game);
+            self.__move(world, player, tick, ref store, ref game, ref mobs);
         }
 
         #[inline(always)]
@@ -321,25 +338,11 @@ mod actions {
             player: felt252,
             tick: u32,
             ref store: Store,
-            ref game: Game
+            ref game: Game,
+            ref towers: Span<Tower>,
         ) {
             // [Effect] Perform tower attacks
-            let mut towers = store.towers(game);
-            self.__attack(world, player, tick, ref store, ref game, ref towers);
-        }
-
-        #[inline(always)]
-        fn _move(
-            self: @ContractState,
-            world: IWorldDispatcher,
-            player: felt252,
-            tick: u32,
-            ref store: Store,
-            ref game: Game
-        ) {
-            // [Effect] Perform mob moves
-            let mut mobs = store.mobs(game);
-            self.__move(world, player, tick, ref store, ref game, ref mobs);
+            self.__attack(world, player, tick, ref store, ref game, ref towers, 0);
         }
     }
 
@@ -394,25 +397,18 @@ mod actions {
             tick: u32,
             ref store: Store,
             ref game: Game,
-            ref towers: Span<Tower>
+            ref towers: Span<Tower>,
+            index: u32,
         ) {
-            match towers.pop_front() {
-                Option::Some(snap_tower) => {
-                    let mut tower = *snap_tower;
-                    if !tower.is_idle(tick) {
-                        return self.__attack(world, player, tick, ref store, ref game, ref towers);
-                    }
-                    let mut mobs = store.mobs(game);
-                    self
-                        .__attack_mob(
-                            world, player, tick, ref store, ref game, ref tower, ref mobs
-                        );
-                    return self.__attack(world, player, tick, ref store, ref game, ref towers);
-                },
-                Option::None => {
-                    return;
-                },
-            };
+            if index == towers.len() {
+                return;
+            }
+            let mut tower = *towers.at(index);
+            if tower.is_idle(tick) {
+                let mut mobs = store.mobs(game);
+                self.__attack_mob(world, player, tick, ref store, ref game, ref tower, ref mobs);
+            }
+            return self.__attack(world, player, tick, ref store, ref game, ref towers, index + 1);
         }
 
         fn __attack_mob(
