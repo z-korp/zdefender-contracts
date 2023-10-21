@@ -35,8 +35,8 @@ struct Tower {
     range: u32,
     level: u8,
     cost: u16,
-    idle: u32,
     hit: u32,
+    tick: u32,
 }
 
 #[derive(Serde, Copy, Drop, PartialEq)]
@@ -112,8 +112,8 @@ impl TowerImpl of TowerTrait {
             range,
             level: 1,
             cost,
-            idle: 0,
             hit: 0,
+            tick: 0,
         }
     }
 
@@ -162,8 +162,10 @@ impl TowerImpl of TowerTrait {
     #[inline(always)]
     fn can_attack(self: Tower, mob: Mob, tick: u32) -> bool {
         let is_in_range = self.in_range(mob);
-        let is_idle = if self.is_wizard() {
-            ((tick + self.cooldown) == self.idle && self.hit == mob.index) || tick >= self.idle
+        let is_idle = if self.is_barbarian() {
+            tick == self.tick || self.is_idle(tick)
+        } else if self.is_wizard() {
+            (tick == self.tick && self.hit == mob.index) || self.is_idle(tick)
         } else {
             self.is_idle(tick)
         };
@@ -182,10 +184,7 @@ impl TowerImpl of TowerTrait {
 
     #[inline(always)]
     fn is_idle(self: Tower, tick: u32) -> bool {
-        if self.is_barbarian() {
-            return (tick + self.cooldown) == self.idle || tick >= self.idle;
-        };
-        tick >= self.idle
+        tick >= (self.tick + self.cooldown)
     }
 
     #[inline(always)]
@@ -200,8 +199,8 @@ impl TowerImpl of TowerTrait {
         } else {
             damage
         };
-        self.idle = tick + self.cooldown;
         self.hit = mob.index;
+        self.tick = tick;
         damage
     }
 }
@@ -239,7 +238,7 @@ mod tests {
         assert(tower.range == super::TOWER_BARBARIAN_RANGE, 'Tower: wrong range');
         assert(tower.level == 1, 'Tower: wrong level');
         assert(tower.cost == super::TOWER_BARBARIAN_COST, 'Tower: wrong cost');
-        assert(tower.idle == 0, 'Tower: wrong idle');
+        assert(tower.tick == 0, 'Tower: wrong tick');
     }
 
     #[test]
@@ -320,10 +319,10 @@ mod tests {
         let mut mob = MobTrait::new(GAME_ID, ID, MobCategory::Normal);
         let mut tower = TowerTrait::new(GAME_ID, ID, INDEX, Category::Barbarian);
         let health = mob.health;
-        let tick = 0;
+        let tick = 1;
         tower.attack(ref mob, tick);
         assert(mob.health < health, 'Tower: wrong mob health');
-        assert(tower.idle > 0, 'Tower: wrong mob health');
+        assert(tower.tick == tick, 'Tower: wrong mob tick');
     }
 
     #[test]
@@ -333,7 +332,7 @@ mod tests {
         let mut tower = TowerTrait::new(GAME_ID, ID, INDEX, Category::Barbarian);
         let tick = 0;
         tower.attack(ref mob, tick);
-        assert(tower.is_idle(tick), 'Tower: must be not idle');
+        assert(!tower.is_idle(tick), 'Tower: must be not idle');
         let tick = tick + tower.cooldown;
         assert(tower.is_idle(tick), 'Tower: must be idle');
     }
@@ -358,11 +357,11 @@ mod tests {
     fn test_tower_bowman_can_attack() {
         let mut mob = MobTrait::new(GAME_ID, ID, MobCategory::Normal);
         let mut tower = TowerTrait::new(GAME_ID, ID, SPAWN_INDEX, Category::Bowman);
-        let tick = 0;
+        let mut tick = 5;
         assert(tower.can_attack(mob, tick), 'Tower: wrong can_attack');
         tower.attack(ref mob, tick);
         assert(!tower.can_attack(mob, tick), 'Tower: wrong can_attack');
-        let tick = tower.cooldown;
+        tick += tower.cooldown;
         assert(tower.can_attack(mob, tick), 'Tower: wrong can_attack');
     }
 
@@ -371,13 +370,13 @@ mod tests {
     fn test_tower_wizard_can_attack() {
         let mut mob = MobTrait::new(GAME_ID, ID, MobCategory::Normal);
         let mut tower = TowerTrait::new(GAME_ID, ID, SPAWN_INDEX, Category::Wizard);
-        let tick = 0;
+        let mut tick = 5;
         assert(tower.can_attack(mob, tick), 'Tower: wrong can_attack');
         tower.attack(ref mob, tick);
         assert(tower.can_attack(mob, tick), 'Tower: wrong can_attack');
-        mob.move();
+        mob.move(tick);
         assert(!tower.can_attack(mob, tick), 'Tower: wrong can_attack');
-        let tick = tower.cooldown;
+        tick += tower.cooldown;
         assert(tower.can_attack(mob, tick), 'Tower: wrong can_attack');
     }
 }

@@ -39,11 +39,12 @@ struct Mob {
     speed: u32,
     defense: u32,
     reward: u16,
+    tick: u32,
 }
 
 trait MobTrait {
     fn new(game_id: u32, id: u32, category: Category) -> Mob;
-    fn move(ref self: Mob) -> bool;
+    fn move(ref self: Mob, tick: u32) -> bool;
 }
 
 impl MobImpl of MobTrait {
@@ -60,10 +61,10 @@ impl MobImpl of MobTrait {
                 (MOB_BOSS_HEALTH, MOB_BOSS_SPEED, MOB_BOSS_DEFENSE, MOB_BOSS_REWARD)
             },
         };
-        Mob { game_id, id, index: SPAWN_INDEX, health, speed, defense, reward }
+        Mob { game_id, id, index: SPAWN_INDEX, health, speed, defense, reward, tick: 0 }
     }
 
-    fn move(ref self: Mob) -> bool {
+    fn move(ref self: Mob, tick: u32) -> bool {
         let mut index = self.speed;
         loop {
             let mut map = MapTrait::load(self.index);
@@ -76,6 +77,7 @@ impl MobImpl of MobTrait {
                 break false;
             }
             self.index = map.next();
+            self.tick = tick;
             index -= 1;
         }
     }
@@ -107,6 +109,7 @@ mod tests {
         assert(mob.speed == super::MOB_NORMAL_SPEED, 'Mob: wrong speed');
         assert(mob.defense == super::MOB_NORMAL_DEFENSE, 'Mob: wrong defense');
         assert(mob.reward == super::MOB_NORMAL_REWARD, 'Mob: wrong reward');
+        assert(mob.tick == 0, 'Mob: wrong tick');
     }
 
     #[test]
@@ -114,7 +117,9 @@ mod tests {
     fn test_mob_move() {
         let mut mob = MobTrait::new(GAME_ID, ID, Category::Normal);
         let index = mob.index;
-        let status = mob.move();
+        let tick = 1;
+        let status = mob.move(tick);
         assert(!status, 'Mob: wrong move status');
+        assert(mob.tick == tick, 'Mob: wrong tick');
     }
 }

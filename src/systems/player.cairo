@@ -314,7 +314,7 @@ mod actions {
                     match mobs.pop_front() {
                         Option::Some(snap_mob) => {
                             let mut mob = *snap_mob;
-                            let status = mob.move();
+                            let status = mob.move(tick);
                             // [Check] Mob reached castle
                             if status {
                                 game.take_damage();
@@ -331,6 +331,7 @@ mod actions {
                 };
 
                 // [Effect] Update game
+                game.tick = tick;
                 store.set_game(game);
                 tick += 1;
             };

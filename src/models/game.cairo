@@ -18,6 +18,7 @@ struct Game {
     wave: u8,
     gold: u16,
     health: u8,
+    tick: u32,
 }
 
 trait GameTrait {
@@ -40,6 +41,7 @@ impl GameImpl of GameTrait {
             wave: 0,
             gold: constants::GAME_INITIAL_GOLD,
             health: constants::GAME_INITIAL_HEALTH,
+            tick: 0,
         }
     }
 
@@ -85,6 +87,7 @@ mod tests {
         assert(game.wave == 0, 'Game: wrong wave');
         assert(game.gold > 0, 'Game: wrong gold');
         assert(game.health > 0, 'Game: wrong health');
+        assert(game.tick == 0, 'Game: wrong tick');
     }
 
     #[test]
