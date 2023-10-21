@@ -8,7 +8,7 @@ use zdefender::models::game::{Game, GameTrait};
 // Constants
 
 const MOB_NORMAL_HEALTH: u32 = 100;
-const MOB_NORMAL_SPEED: u32 = 2;
+const MOB_NORMAL_SPEED: u32 = 1;
 const MOB_NORMAL_DEFENSE: u32 = 1;
 const MOB_NORMAL_REWARD: u16 = 1;
 const MOB_ELITE_HEALTH: u32 = 200;
