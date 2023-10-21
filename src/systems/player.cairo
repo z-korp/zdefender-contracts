@@ -288,10 +288,11 @@ mod actions {
             ref towers: Span<Tower>,
         ) {
             // [Effect] Perform tower attacks
-            self._attack(world, player, tick, ref store, ref game, ref towers);
+            self.__attack(world, player, tick, ref store, ref game, ref towers, towers.len());
 
             // [Effect] Perform mob moves
-            self._move(world, player, tick, ref store, ref game);
+            let mut mobs = store.mobs(game);
+            self.__move(world, player, tick, ref store, ref game, ref mobs);
 
             // [Effect] Perform mob spawns
             self._spawn(world, player, tick, ref store, ref game, ref dice);
@@ -304,34 +305,6 @@ mod actions {
             };
             game.tick = tick;
             store.set_game(game);
-        }
-
-        #[inline(always)]
-        fn _attack(
-            self: @ContractState,
-            world: IWorldDispatcher,
-            player: felt252,
-            tick: u32,
-            ref store: Store,
-            ref game: Game,
-            ref towers: Span<Tower>,
-        ) {
-            // [Effect] Perform tower attacks
-            self.__attack(world, player, tick, ref store, ref game, ref towers, towers.len());
-        }
-
-        #[inline(always)]
-        fn _move(
-            self: @ContractState,
-            world: IWorldDispatcher,
-            player: felt252,
-            tick: u32,
-            ref store: Store,
-            ref game: Game,
-        ) {
-            // [Effect] Perform mob moves
-            let mut mobs = store.mobs(game);
-            self.__move(world, player, tick, ref store, ref game, ref mobs);
         }
 
         #[inline(always)]
@@ -386,8 +359,8 @@ mod actions {
         ) {
             match mobs.pop_front() {
                 Option::Some(snap_mob) => {
-                    let mut mob = *snap_mob;
-                    if tower.can_attack(mob, tick) {
+                    if tower.can_attack(snap_mob, tick) {
+                        let mut mob = *snap_mob;
                         let damage = tower.attack(ref mob, tick);
                         store.set_mob(mob);
                         if mob.health == 0 {
