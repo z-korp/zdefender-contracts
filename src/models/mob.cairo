@@ -39,6 +39,7 @@ struct Mob {
     previous_index: u32,
     next_index: u32,
     health: u32,
+    max_health: u32,
     speed: u32,
     defense: u32,
     reward: u16,
@@ -66,6 +67,7 @@ impl MobImpl of MobTrait {
             previous_index: index,
             next_index,
             health,
+            max_health: health,
             speed,
             defense,
             reward,
@@ -142,6 +144,7 @@ mod tests {
         assert(mob.previous_index == super::SPAWN_INDEX, 'Mob: wrong previous index');
         assert(mob.next_index != super::SPAWN_INDEX, 'Mob: wrong next index');
         assert(mob.health == super::MOB_NORMAL_HEALTH, 'Mob: wrong health');
+        assert(mob.max_health == super::MOB_NORMAL_HEALTH, 'Mob: wrong health');
         assert(mob.speed == super::MOB_NORMAL_SPEED, 'Mob: wrong speed');
         assert(mob.defense == super::MOB_NORMAL_DEFENSE, 'Mob: wrong defense');
         assert(mob.reward == super::MOB_NORMAL_REWARD, 'Mob: wrong reward');
