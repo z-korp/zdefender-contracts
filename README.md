@@ -5,27 +5,39 @@
 
 # zDefender
 
-The official Dojo Starter guide, the quickest and most streamlined way to get your Dojo Autonomous World up and running. This guide will assist you with the initial setup, from cloning the repository to deploying your world.
+zDefender is an onchain game running on Starknet Appchain.
 
-Read the full tutorial [here](https://book.dojoengine.org/cairo/hello-dojo.html)
+[![Project license](https://img.shields.io/github/license/z-korp/zdefender-contracts.svg?style=flat-square)](LICENSE)
+[![Pull Requests welcome](https://img.shields.io/badge/PRs-welcome-ff69b4.svg?style=flat-square)](https://github.com/z-korp/zdefender-contracts/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
 
----
+## About
 
-## Contribution
+zDefender is a classic Tower Defense and has been build during the [Dojo Game Jam #2](https://itch.io/jam/dojo-game-jam-2).
 
-This starter project is a constant work in progress and contributions are greatly appreciated!
+The game leverages the [Dojo Engine](https://dojoengine.org/), a provable game engine and toolchain for building onchain games and autonomous worlds with Cairo.
 
-1. **Report a Bug**
+## How to play
 
-    - If you think you have encountered a bug, and we should know about it, feel free to report it [here](https://github.com/dojoengine/dojo-starter/issues) and we will take care of it.
+### Rules
 
-2. **Request a Feature**
+#### Goal
 
-    - You can also request for a feature [here](https://github.com/dojoengine/dojo-starter/issues), and if it's viable, it will be picked for development.
+The only mode is an endless run. It means the only end state is to be defeated by the game.
 
-3. **Create a Pull Request**
-    - It can't get better then this, your pull request will be appreciated by the community.
+User must beat each wave one after the other and try to reach the highest wave to have his name carved on the leaderboard.
 
-For any other questions, feel free to reach out to us [here](https://dojoengine.org/contact).
+When a mob reaches the user castle, the user loses a life point. When the last life point is lost, the game ends.
 
-Happy coding!
+When a wave has been clean, the user can run the next wave while the mobs scale up with the # of wave.
+
+#### Towers
+
+The player can spend his gold to buy towers, each tower has its own attributes.
+
+The user can either build a new one or upgrade an existing one.
+
+#### Mobs
+
+There are different type of mobs with different attributes, the last mob of each wave is a boss with strongest attributes.
+
+Each mob death rewards the user with some gold, the stronger is the mob the more the reward are.
