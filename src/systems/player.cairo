@@ -239,7 +239,7 @@ mod actions {
 
             // [Effect] Tick loop
             let wave = game.wave;
-            let mut tick = 0;
+            let mut tick = 1;
             loop {
                 // [Check] Game or wave is over
                 let game: Game = store.game(player);
