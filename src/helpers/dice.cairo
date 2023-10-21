@@ -24,9 +24,10 @@ trait DiceTrait {
     /// # Arguments
     /// * `seed` - A seed to initialize the dice.
     /// * `wave` - The wave to customize the dice randomness.
+    /// * `tick` - The tick to customize the dice randomness.
     /// # Returns
     /// * The initialized `Dice`.
-    fn new(seed: felt252, wave: u8) -> Dice;
+    fn new(seed: felt252, wave: u8, tick: u32) -> Dice;
     /// Returns a value after a die roll.
     /// # Arguments
     /// * `self` - The Dice.
@@ -38,10 +39,11 @@ trait DiceTrait {
 /// Implementation of the `DiceTrait` trait for the `Dice` struct.
 impl DiceImpl of DiceTrait {
     #[inline(always)]
-    fn new(seed: felt252, wave: u8) -> Dice {
+    fn new(seed: felt252, wave: u8, tick: u32) -> Dice {
         let mut state = PoseidonTrait::new();
         state = state.update(seed);
         state = state.update(wave.into());
+        state = state.update(tick.into());
         Dice { seed: state.finalize(), nonce: 0 }
     }
 
@@ -69,7 +71,7 @@ mod tests {
     #[test]
     #[available_gas(2000000)]
     fn test_dice_new_roll() {
-        let mut dice = DiceTrait::new('seed', 0);
+        let mut dice = DiceTrait::new('seed', 0, 0);
         assert(dice.roll() < DICE_FACES_NUMBER, 'Wrong dice value');
         assert(dice.roll() < DICE_FACES_NUMBER, 'Wrong dice value');
         assert(dice.roll() < DICE_FACES_NUMBER, 'Wrong dice value');
@@ -81,7 +83,7 @@ mod tests {
     #[test]
     #[available_gas(2000000)]
     fn test_dice_new_roll_overflow() {
-        let mut dice = DiceTrait::new('seed', 0);
+        let mut dice = DiceTrait::new('seed', 0, 0);
         dice.nonce = 0x800000000000011000000000000000000000000000000000000000000000000; // PRIME - 1
         dice.roll();
         assert(dice.nonce == 0, 'Wrong dice nonce');
