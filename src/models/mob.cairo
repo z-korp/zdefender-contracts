@@ -85,14 +85,14 @@ impl MobImpl of MobTrait {
     fn move(ref self: Mob, tick: u32) -> bool {
         let mut index = self.speed;
         loop {
-            let mut map = MapTrait::load(self.index);
-            // [Break] Mob is reaching the player castle
-            if map.is_idle() {
-                break true;
-            }
             // [Break] If all moves done
             if index == 0 {
                 break false;
+            }
+            // [Break] Mob is reaching the player castle
+            let mut map = MapTrait::load(self.index);
+            if map.is_idle() {
+                break true;
             }
             self.previous_index = self.index;
             self.index = map.next();
