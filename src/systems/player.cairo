@@ -358,7 +358,7 @@ mod actions {
             if index == 0 || game.mob_remaining == 0 {
                 return;
             }
-            let mob_id = game.mob_count.into();
+            let mob_id = game.mob_alive.into();
             // Category is determined by the remaining mobs
             let elite_rate = if MOB_ELITE_SPAWN_RATE > game.wave {
                 MOB_ELITE_SPAWN_RATE - game.wave
