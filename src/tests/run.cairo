@@ -48,5 +48,5 @@ fn test_run() {
 
     // [Assert] Game
     let game: Game = store.game(ACCOUNT);
-    assert(game.over == false, 'Game: wrong status');
+    assert(!game.over, 'Game: wrong status');
 }

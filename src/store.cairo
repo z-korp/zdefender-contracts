@@ -81,9 +81,7 @@ impl StoreImpl of StoreTrait {
             };
             index -= 1;
             let tower = self.tower(game, index);
-            if tower.key != 0 {
-                towers.append(tower);
-            };
+            towers.append(tower);
         };
         towers.span()
     }

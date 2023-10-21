@@ -186,8 +186,6 @@ mod actions {
             assert(game.gold >= cost, errors::UPGRADE_NOT_ENOUGH_GOLD);
 
             // [Effect] Tower
-            let tower_id: u32 = game.tower_count.into()
-                + 1; // Tower id starts at 1, 0 is reserved for null
             tower.upgrade();
             store.set_tower(tower);
 

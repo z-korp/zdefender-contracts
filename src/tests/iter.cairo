@@ -44,7 +44,7 @@ fn test_iter() {
     systems.player_actions.upgrade(world, ACCOUNT, map.x(), map.y());
 
     // [Run]
-    let tick = 1;
+    let mut tick = 1;
     systems.player_actions.iter(world, ACCOUNT, tick);
 
     // [Assert] Game
