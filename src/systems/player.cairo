@@ -358,7 +358,8 @@ mod actions {
             if index == 0 || game.mob_remaining == 0 {
                 return;
             }
-            let mob_id = game.mob_alive.into();
+            let mob_key = game.mob_alive.into();
+            let mob_id = game.mob_count.into();
             // Category is determined by the remaining mobs
             let elite_rate = if MOB_ELITE_SPAWN_RATE > game.wave {
                 MOB_ELITE_SPAWN_RATE - game.wave
@@ -373,7 +374,7 @@ mod actions {
                 MobCategory::Normal
             };
             let mut mob = MobTrait::new(
-                game_id: game.id, id: mob_id, category: category, tick: tick,
+                game_id: game.id, key: mob_key, id: mob_id, category: category, tick: tick,
             );
             store.set_mob(mob);
             game.mob_count += 1;
