@@ -40,10 +40,10 @@ impl GameImpl of GameTrait {
             tower_count: 0,
             mob_count: 0,
             mob_remaining: constants::GAME_INITIAL_MOB_COUNT,
-            wave: 0,
+            wave: 1,
             gold: constants::GAME_INITIAL_GOLD,
             health: constants::GAME_INITIAL_HEALTH,
-            tick: 0,
+            tick: constants::GAME_INITIAL_TICK,
         }
     }
 
@@ -64,7 +64,7 @@ impl GameImpl of GameTrait {
     #[inline(always)]
     fn next(ref self: Game) {
         self.wave += 1;
-        self.tick = 0;
+        self.tick = constants::GAME_INITIAL_TICK;
         // +5% mobs per wave
         self.mob_count = constants::GAME_INITIAL_MOB_COUNT * (95 + (self.wave * 5)).into() / 100;
     }
@@ -99,10 +99,10 @@ mod tests {
         assert(game.tower_count == 0, 'Game: wrong tower_count');
         assert(game.mob_count == 0, 'Game: wrong mob_count');
         assert(game.mob_remaining > 0, 'Game: wrong mob_remaining');
-        assert(game.wave == 0, 'Game: wrong wave');
+        assert(game.wave == 1, 'Game: wrong wave');
         assert(game.gold > 0, 'Game: wrong gold');
         assert(game.health > 0, 'Game: wrong health');
-        assert(game.tick == 0, 'Game: wrong tick');
+        assert(game.tick > 0, 'Game: wrong tick');
     }
 
     #[test]
