@@ -238,7 +238,7 @@ mod actions {
             assert(game.mob_remaining > 0 || game.mob_alive > 0, errors::RUN_INVALID_MOB_STATUS);
 
             // [Effect] Tick loop
-            let mut dice = DiceTrait::new(game.seed, game.wave);
+            let mut dice = DiceTrait::new(game.seed, game.wave, 0);
             let mut towers = store.towers(game);
             let wave = game.wave;
             let mut tick = 1;
@@ -268,7 +268,7 @@ mod actions {
             assert(game.mob_remaining > 0 || game.mob_alive > 0, errors::ITER_INVALID_MOB_STATUS);
 
             // [Effect] Run iteration
-            let mut dice = DiceTrait::new(game.seed, game.wave);
+            let mut dice = DiceTrait::new(game.seed, game.wave, tick);
             let mut towers = store.towers(game);
             self._iter(world, player, tick, ref store, ref game, ref dice, ref towers);
         }

@@ -81,12 +81,12 @@ impl MobImpl of MobTrait {
             }
             // [Break] Mob is reaching the player castle
             let mut map = MapTrait::load(self.index);
+            self.tick = tick;
             if map.is_idle() {
                 self.health = 0;
                 break true;
             }
             self.index = map.next();
-            self.tick = tick;
             index -= 1;
         }
     }
