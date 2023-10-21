@@ -288,11 +288,10 @@ mod actions {
             ref towers: Span<Tower>,
         ) {
             // [Effect] Perform tower attacks
-            let mut mobs = store.mobs(game);
-            self._attack(world, player, tick, ref store, ref game, ref towers, ref mobs);
+            self._attack(world, player, tick, ref store, ref game, ref towers);
 
             // [Effect] Perform mob moves
-            self._move(world, player, tick, ref store, ref game, ref mobs);
+            self._move(world, player, tick, ref store, ref game);
 
             // [Effect] Perform mob spawns
             self._spawn(world, player, tick, ref store, ref game, ref dice);
@@ -316,13 +315,9 @@ mod actions {
             ref store: Store,
             ref game: Game,
             ref towers: Span<Tower>,
-            ref mobs: Span<Mob>,
         ) {
             // [Effect] Perform tower attacks
-            self
-                .__attack(
-                    world, player, tick, ref store, ref game, ref towers, ref mobs, towers.len()
-                );
+            self.__attack(world, player, tick, ref store, ref game, ref towers, towers.len());
         }
 
         #[inline(always)]
@@ -333,10 +328,10 @@ mod actions {
             tick: u32,
             ref store: Store,
             ref game: Game,
-            ref mobs: Span<Mob>,
         ) {
             // [Effect] Perform mob moves
-            self.__move(world, player, tick, ref store, ref game, ref mobs, mobs.len());
+            let mut mobs = store.mobs(game);
+            self.__move(world, player, tick, ref store, ref game, ref mobs);
         }
 
         #[inline(always)]
@@ -365,7 +360,6 @@ mod actions {
             ref store: Store,
             ref game: Game,
             ref towers: Span<Tower>,
-            ref mobs: Span<Mob>,
             mut index: u32,
         ) {
             if index == 0 {
@@ -374,13 +368,10 @@ mod actions {
             index -= 1;
             let mut tower = *towers.at(index);
             if tower.is_idle(tick) {
-                self
-                    .__attack_mob(
-                        world, player, tick, ref store, ref game, ref tower, ref mobs, mobs.len()
-                    );
+                let mut mobs = store.mobs(game);
+                self.__attack_mob(world, player, tick, ref store, ref game, ref tower, ref mobs);
             }
-            return self
-                .__attack(world, player, tick, ref store, ref game, ref towers, ref mobs, index);
+            return self.__attack(world, player, tick, ref store, ref game, ref towers, index);
         }
 
         fn __attack_mob(
@@ -392,29 +383,35 @@ mod actions {
             ref game: Game,
             ref tower: Tower,
             ref mobs: Span<Mob>,
-            mut index: u32,
         ) {
-            if index == 0 {
-                return;
-            }
-            index -= 1;
-            let mut mob = *mobs.at(index);
-            if tower.can_attack(mob, tick) {
-                let damage = tower.attack(ref mob, tick);
-                store.set_mob(mob);
-                if mob.health == 0 {
-                    game.gold += mob.reward;
-                    store.remove_mob(game, mob);
-                    game.mob_alive -= 1;
-                };
-                store.set_tower(tower);
+            match mobs.pop_front() {
+                Option::Some(snap_mob) => {
+                    let mut mob = *snap_mob;
+                    if tower.can_attack(mob, tick) {
+                        let damage = tower.attack(ref mob, tick);
+                        store.set_mob(mob);
+                        if mob.health == 0 {
+                            game.gold += mob.reward;
+                            store.remove_mob(game, mob);
+                            game.mob_alive -= 1;
+                        };
+                        store.set_tower(tower);
 
-                // [Event] Hit
-                let hit = Hit { game_id: game.id, tick, from: tower.id, to: mob.id, damage, };
-                emit!(world, hit);
+                        // [Event] Hit
+                        let hit = Hit {
+                            game_id: game.id, tick, from: tower.id, to: mob.id, damage,
+                        };
+                        emit!(world, hit);
+                    };
+                    return self
+                        .__attack_mob(
+                            world, player, tick, ref store, ref game, ref tower, ref mobs
+                        );
+                },
+                Option::None => {
+                    return;
+                },
             };
-            return self
-                .__attack_mob(world, player, tick, ref store, ref game, ref tower, ref mobs, index);
         }
 
         fn __move(
@@ -425,23 +422,25 @@ mod actions {
             ref store: Store,
             ref game: Game,
             ref mobs: Span<Mob>,
-            mut index: u32,
         ) {
-            if index == 0 {
-                return;
-            }
-            index -= 1;
-            let mut mob = *mobs.at(index);
-            let status = mob.move(tick);
-            // [Check] Mob reached castle
-            if status {
-                game.take_damage();
-                store.remove_mob(game, mob);
-                game.mob_alive -= 1;
-            } else {
-                store.set_mob(mob);
+            match mobs.pop_front() {
+                Option::Some(snap_mob) => {
+                    let mut mob = *snap_mob;
+                    let status = mob.move(tick);
+                    // [Check] Mob reached castle
+                    if status {
+                        game.take_damage();
+                        store.remove_mob(game, mob);
+                        game.mob_alive -= 1;
+                    } else {
+                        store.set_mob(mob);
+                    };
+                    return self.__move(world, player, tick, ref store, ref game, ref mobs);
+                },
+                Option::None => {
+                    return;
+                },
             };
-            return self.__move(world, player, tick, ref store, ref game, ref mobs, index);
         }
 
         fn __spawn(
