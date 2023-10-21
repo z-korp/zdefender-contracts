@@ -64,6 +64,7 @@ impl GameImpl of GameTrait {
     #[inline(always)]
     fn next(ref self: Game) {
         self.wave += 1;
+        self.tick = 0;
         // +5% mobs per wave
         self.mob_count = constants::GAME_INITIAL_MOB_COUNT * (95 + (self.wave * 5)).into() / 100;
     }
