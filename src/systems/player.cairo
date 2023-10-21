@@ -374,7 +374,12 @@ mod actions {
                 MobCategory::Normal
             };
             let mut mob = MobTrait::new(
-                game_id: game.id, key: mob_key, id: mob_id, category: category, tick: tick,
+                game_id: game.id,
+                key: mob_key,
+                id: mob_id,
+                category: category,
+                tick: tick,
+                wave: game.wave
             );
             store.set_mob(mob);
             game.mob_count += 1;

@@ -229,6 +229,7 @@ mod tests {
     const ID: u32 = 0;
     const INDEX: u32 = 0;
     const TICK: u32 = 0;
+    const WAVE: u8 = 1;
 
     #[test]
     #[available_gas(2000000)]
@@ -306,7 +307,7 @@ mod tests {
     #[test]
     #[available_gas(2000000)]
     fn test_tower_in_range() {
-        let mut mob = MobTrait::new(GAME_ID, KEY, ID, MobCategory::Normal, TICK);
+        let mut mob = MobTrait::new(GAME_ID, KEY, ID, MobCategory::Normal, TICK, WAVE);
         let mut tower = TowerTrait::new(GAME_ID, KEY, SPAWN_INDEX, Category::Barbarian);
         assert(tower.in_range(mob), 'Tower: wrong can_attack');
     }
@@ -314,7 +315,7 @@ mod tests {
     #[test]
     #[available_gas(2000000)]
     fn test_tower_not_in_range() {
-        let mut mob = MobTrait::new(GAME_ID, KEY, ID, MobCategory::Normal, TICK);
+        let mut mob = MobTrait::new(GAME_ID, KEY, ID, MobCategory::Normal, TICK, WAVE);
         let mut tower = TowerTrait::new(GAME_ID, KEY, INDEX, Category::Barbarian);
         assert(!tower.in_range(mob), 'Tower: wrong can_attack');
     }
@@ -322,7 +323,7 @@ mod tests {
     #[test]
     #[available_gas(2000000)]
     fn test_tower_attack() {
-        let mut mob = MobTrait::new(GAME_ID, KEY, ID, MobCategory::Normal, TICK);
+        let mut mob = MobTrait::new(GAME_ID, KEY, ID, MobCategory::Normal, TICK, WAVE);
         let mut tower = TowerTrait::new(GAME_ID, KEY, INDEX, Category::Barbarian);
         let health = mob.health;
         let tick = 1;
@@ -334,7 +335,7 @@ mod tests {
     #[test]
     #[available_gas(2000000)]
     fn test_tower_idle() {
-        let mut mob = MobTrait::new(GAME_ID, KEY, ID, MobCategory::Normal, TICK);
+        let mut mob = MobTrait::new(GAME_ID, KEY, ID, MobCategory::Normal, TICK, WAVE);
         let mut tower = TowerTrait::new(GAME_ID, KEY, INDEX, Category::Barbarian);
         let tick = 0;
         tower.attack(ref mob, tick);
@@ -346,7 +347,7 @@ mod tests {
     #[test]
     #[available_gas(2000000)]
     fn test_tower_barbarian_can_attack() {
-        let mut mob = MobTrait::new(GAME_ID, KEY, ID, MobCategory::Normal, TICK);
+        let mut mob = MobTrait::new(GAME_ID, KEY, ID, MobCategory::Normal, TICK, WAVE);
         let mut tower = TowerTrait::new(GAME_ID, KEY, SPAWN_INDEX, Category::Barbarian);
         let tick = 0;
         assert(tower.can_attack(mob, tick), 'Tower: wrong can_attack');
@@ -361,7 +362,7 @@ mod tests {
     #[test]
     #[available_gas(2000000)]
     fn test_tower_bowman_can_attack() {
-        let mut mob = MobTrait::new(GAME_ID, KEY, ID, MobCategory::Normal, TICK);
+        let mut mob = MobTrait::new(GAME_ID, KEY, ID, MobCategory::Normal, TICK, WAVE);
         let mut tower = TowerTrait::new(GAME_ID, KEY, SPAWN_INDEX, Category::Bowman);
         let mut tick = 5;
         assert(tower.can_attack(mob, tick), 'Tower: wrong can_attack');
@@ -374,7 +375,7 @@ mod tests {
     #[test]
     #[available_gas(2000000)]
     fn test_tower_wizard_can_attack() {
-        let mut mob = MobTrait::new(GAME_ID, KEY, ID, MobCategory::Normal, TICK);
+        let mut mob = MobTrait::new(GAME_ID, KEY, ID, MobCategory::Normal, TICK, WAVE);
         let mut tower = TowerTrait::new(GAME_ID, KEY, SPAWN_INDEX, Category::Wizard);
         let mut tick = 5;
         assert(tower.can_attack(mob, tick), 'Tower: wrong can_attack');

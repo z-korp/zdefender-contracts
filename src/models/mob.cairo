@@ -46,24 +46,15 @@ struct Mob {
 }
 
 trait MobTrait {
-    fn new(game_id: u32, key: u32, id: u32, category: Category, tick: u32) -> Mob;
+    fn new(game_id: u32, key: u32, id: u32, category: Category, tick: u32, wave: u8) -> Mob;
     fn move(ref self: Mob, tick: u32) -> bool;
+    fn stats(category: Category, wave: u8) -> (u32, u32, u32, u16);
 }
 
 impl MobImpl of MobTrait {
     #[inline(always)]
-    fn new(game_id: u32, key: u32, id: u32, category: Category, tick: u32) -> Mob {
-        let (health, speed, defense, reward) = match category {
-            Category::Normal => {
-                (MOB_NORMAL_HEALTH, MOB_NORMAL_SPEED, MOB_NORMAL_DEFENSE, MOB_NORMAL_REWARD)
-            },
-            Category::Elite => {
-                (MOB_ELITE_HEALTH, MOB_ELITE_SPEED, MOB_ELITE_DEFENSE, MOB_ELITE_REWARD)
-            },
-            Category::Boss => {
-                (MOB_BOSS_HEALTH, MOB_BOSS_SPEED, MOB_BOSS_DEFENSE, MOB_BOSS_REWARD)
-            },
-        };
+    fn new(game_id: u32, key: u32, id: u32, category: Category, tick: u32, wave: u8) -> Mob {
+        let (health, speed, defense, reward) = MobTrait::stats(category, wave);
         let index = SPAWN_INDEX;
         let mut map = MapTrait::load(index);
         let next_index = map.next();
@@ -102,6 +93,24 @@ impl MobImpl of MobTrait {
             index -= 1;
         }
     }
+
+    fn stats(category: Category, wave: u8) -> (u32, u32, u32, u16) {
+        let (health, speed, defense, reward) = match category {
+            Category::Normal => {
+                (MOB_NORMAL_HEALTH, MOB_NORMAL_SPEED, MOB_NORMAL_DEFENSE, MOB_NORMAL_REWARD)
+            },
+            Category::Elite => {
+                (MOB_ELITE_HEALTH, MOB_ELITE_SPEED, MOB_ELITE_DEFENSE, MOB_ELITE_REWARD)
+            },
+            Category::Boss => {
+                (MOB_BOSS_HEALTH, MOB_BOSS_SPEED, MOB_BOSS_DEFENSE, MOB_BOSS_REWARD)
+            },
+        };
+        let health = health * (90 + wave * 10).into() / 100;
+        let defense = defense * (90 + wave * 10).into() / 100;
+        let reward = reward * (90 + wave * 10).into() / 100;
+        (health, speed, defense, reward)
+    }
 }
 
 #[cfg(test)]
@@ -120,11 +129,12 @@ mod tests {
     const KEY: u32 = 0;
     const ID: u32 = 0;
     const TICK: u32 = 0;
+    const WAVE: u8 = 1;
 
     #[test]
     #[available_gas(2000000)]
     fn test_mob_new() {
-        let mut mob = MobTrait::new(GAME_ID, KEY, ID, Category::Normal, TICK);
+        let mut mob = MobTrait::new(GAME_ID, KEY, ID, Category::Normal, TICK, WAVE);
         assert(mob.game_id == GAME_ID, 'Mob: wrong game id');
         assert(mob.key == KEY, 'Mob: wrong id');
         assert(mob.id == KEY, 'Mob: wrong id');
@@ -141,7 +151,7 @@ mod tests {
     #[test]
     #[available_gas(2000000)]
     fn test_mob_move() {
-        let mut mob = MobTrait::new(GAME_ID, KEY, ID, Category::Normal, TICK);
+        let mut mob = MobTrait::new(GAME_ID, KEY, ID, Category::Normal, TICK, WAVE);
         let index = mob.index;
         let tick = 1;
         let status = mob.move(tick);
