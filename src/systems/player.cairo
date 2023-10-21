@@ -96,6 +96,7 @@ mod actions {
 
     #[derive(Drop, starknet::Event)]
     struct Hit {
+        game_id: u32,
         tick: u32,
         from: u32,
         to: u32,
@@ -439,7 +440,9 @@ mod actions {
                         store.set_tower(tower);
 
                         // [Event] Hit
-                        let hit = Hit { tick, from: tower.id, to: mob.id, damage, };
+                        let hit = Hit {
+                            game_id: game.id, tick, from: tower.id, to: mob.id, damage,
+                        };
                         emit!(world, hit);
                     };
                     return self
