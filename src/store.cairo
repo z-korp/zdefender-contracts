@@ -133,7 +133,7 @@ impl StoreImpl of StoreTrait {
 
     #[inline(always)]
     fn remove_mob(ref self: Store, game: Game, mob: Mob) {
-        let last_mob_key: u32 = game.mob_count.into();
+        let last_mob_key: u32 = game.mob_count.into() - 1;
         // Skip if the mob key is the latest key
         if last_mob_key == mob.key {
             return;
