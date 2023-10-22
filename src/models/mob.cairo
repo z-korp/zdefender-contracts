@@ -104,9 +104,9 @@ impl MobImpl of MobTrait {
                 (MOB_BOSS_HEALTH, MOB_BOSS_SPEED, MOB_BOSS_DEFENSE, MOB_BOSS_REWARD)
             },
         };
-        let health = health * (90 + wave * 10).into() / 100;
-        let defense = defense * (90 + wave * 10).into() / 100;
-        let reward = reward * (90 + wave * 10).into() / 100;
+        let health = health * wave.into();
+        let defense = defense * wave.into();
+        let reward = reward * (90 + wave.into() * 10) / 100;
         (health, speed, defense, reward)
     }
 }
