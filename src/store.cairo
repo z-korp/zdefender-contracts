@@ -58,17 +58,18 @@ impl StoreImpl of StoreTrait {
     }
 
     fn mobs(ref self: Store, game: Game) -> Array<Mob> {
-        let mut index: u32 = game.mob_count.into();
+        let max: u32 = game.mob_count.into();
+        let mut index: u32 = 0;
         let mut mobs: Array<Mob> = array![];
         loop {
-            if index == 0 {
+            if index == max {
                 break;
             };
-            index -= 1;
             let mob = self.mob(game, index);
             if mob.health > 0 {
                 mobs.append(mob);
             };
+            index += 1;
         };
         mobs
     }
