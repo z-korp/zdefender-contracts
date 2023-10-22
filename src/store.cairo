@@ -58,7 +58,7 @@ impl StoreImpl of StoreTrait {
     }
 
     fn mobs(ref self: Store, game: Game) -> Array<Mob> {
-        let max: u32 = game.mob_count.into();
+        let max: u32 = game.mob_alive.into();
         let mut index: u32 = 0;
         let mut mobs: Array<Mob> = array![];
         loop {
@@ -66,9 +66,7 @@ impl StoreImpl of StoreTrait {
                 break;
             };
             let mob = self.mob(game, index);
-            if mob.health > 0 {
-                mobs.append(mob);
-            };
+            mobs.append(mob);
             index += 1;
         };
         mobs
@@ -139,15 +137,18 @@ impl StoreImpl of StoreTrait {
 
     #[inline(always)]
     fn remove_mob(ref self: Store, game: Game, mob: Mob) {
-        let last_mob_key: u32 = game.mob_alive.into() - 1;
-        // Skip if the mob key is the latest key
-        if last_mob_key == mob.key {
-            return;
+        let mut last_mob_key: u32 = game.mob_alive.into() - 1;
+        // Replace the mob with the last mob
+        if last_mob_key != mob.key {
+            let mut last_tower = self.tower(game, last_mob_key);
+            last_tower.key = mob.key;
+            self.set_tower(last_tower);
         }
-        // Move last mob to the removed mob position
-        let mut last_mob = self.mob(game, last_mob_key);
-        last_mob.key = mob.key;
-        self.set_mob(last_mob);
+        // Remove the last mob
+        let mut empty_tower = self.tower(game, game.tower_build.into());
+        empty_tower.key = last_mob_key;
+        empty_tower.id = mob.id;
+        self.set_tower(empty_tower);
     }
 
     #[inline(always)]
