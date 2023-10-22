@@ -74,6 +74,7 @@ impl U8IntoCategory of Into<u8, Category> {
 
 trait TowerTrait {
     fn new(game_id: u32, key: u32, id: u32, index: u32, category: Category) -> Tower;
+    fn stats(category: Category) -> (u32, u32, u32, u16);
     fn is_barbarian(self: Tower) -> bool;
     fn is_bowman(self: Tower) -> bool;
     fn is_wizard(self: Tower) -> bool;
@@ -90,7 +91,26 @@ trait TowerTrait {
 impl TowerImpl of TowerTrait {
     #[inline(always)]
     fn new(game_id: u32, key: u32, id: u32, index: u32, category: Category) -> Tower {
-        let (cooldown, attack, range, cost) = match category {
+        let (cooldown, attack, range, cost) = TowerTrait::stats(category);
+        Tower {
+            game_id,
+            key,
+            id,
+            index,
+            category: category.into(),
+            cooldown,
+            attack,
+            range,
+            level: 1,
+            cost,
+            hit: 0,
+            tick: 0,
+        }
+    }
+
+    #[inline(always)]
+    fn stats(category: Category) -> (u32, u32, u32, u16) {
+        match category {
             Category::Barbarian => {
                 (
                     TOWER_BARBARIAN_COOLDOWN,
@@ -105,20 +125,6 @@ impl TowerImpl of TowerTrait {
             Category::Wizard => {
                 (TOWER_WIZARD_COOLDOWN, TOWER_WIZARD_ATTACK, TOWER_WIZARD_RANGE, TOWER_WIZARD_COST)
             },
-        };
-        Tower {
-            game_id,
-            key,
-            id,
-            index,
-            category: category.into(),
-            cooldown,
-            attack,
-            range,
-            level: 1,
-            cost,
-            hit: 0,
-            tick: 0,
         }
     }
 
@@ -150,9 +156,10 @@ impl TowerImpl of TowerTrait {
 
     #[inline(always)]
     fn upgrade(ref self: Tower) {
+        let (cooldown, attack, range, cost) = TowerTrait::stats(self.category.into());
         self.cost += self.upgrade_cost();
-        self.attack *= 2;
         self.level += 1;
+        self.attack = attack * self.level.into();
     }
 
     #[inline(always)]
