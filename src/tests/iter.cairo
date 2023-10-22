@@ -49,7 +49,7 @@ fn test_iter() {
 
     // [Assert] Game
     let game: Game = store.game(ACCOUNT);
-    assert(game.over == false, 'Game: wrong status');
+    assert(!game.over, 'Game: wrong status');
 }
 
 #[test]
@@ -82,7 +82,7 @@ fn test_iter_multi() {
 
     // [Assert] Game
     let game = store.game(ACCOUNT);
-    assert(game.over == false, 'Game: wrong status');
+    assert(!game.over, 'Game: wrong status');
     assert(game.wave == 2, 'Game: wrong wave');
 }
 
@@ -192,4 +192,58 @@ fn test_iter_farest_tower() {
     let game = store.game(ACCOUNT);
     assert(tick <= 100, 'Game: wrong tick');
     assert(game.over, 'Game: wrong status');
+}
+
+#[test]
+#[available_gas(1_000_000_000_000)]
+fn test_iter_multi_next_wave() {
+    // [Setup]
+    let (world, systems) = setup::spawn_game();
+    let mut store = StoreTrait::new(world);
+
+    // [Create]
+    systems.player_actions.create(world, ACCOUNT, SEED, NAME);
+
+    // [Build]
+    let mut map = MapTrait::from(1, 5);
+    systems.player_actions.build(world, ACCOUNT, map.x(), map.y(), TowerCategory::Barbarian);
+
+    // [Upgrade] 
+    systems.player_actions.upgrade(world, ACCOUNT, map.x(), map.y());
+
+    // [Iter]
+    let mut tick = 1;
+    loop {
+        let game: Game = store.game(ACCOUNT);
+        if game.wave > 1 || game.over || tick > 100 {
+            break;
+        }
+        systems.player_actions.iter(world, ACCOUNT, tick);
+        tick += 1;
+    };
+
+    // [Assert] Game
+    let game = store.game(ACCOUNT);
+    assert(!game.over, 'Game: wrong status');
+    assert(game.wave == 2, 'Game: wrong wave');
+
+    // [Build]
+    let mut map = MapTrait::from(2, 3);
+    systems.player_actions.build(world, ACCOUNT, map.x(), map.y(), TowerCategory::Barbarian);
+
+    // [Iter]
+    let mut tick = 1;
+    loop {
+        let game: Game = store.game(ACCOUNT);
+        if game.wave > 2 || game.over || tick > 100 {
+            break;
+        }
+        systems.player_actions.iter(world, ACCOUNT, tick);
+        tick += 1;
+    };
+
+    // [Assert] Game
+    let game = store.game(ACCOUNT);
+    assert(!game.over, 'Game: wrong status');
+    assert(game.wave == 3, 'Game: wrong wave');
 }

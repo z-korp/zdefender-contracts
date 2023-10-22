@@ -68,7 +68,10 @@ impl GameImpl of GameTrait {
         self.wave += 1;
         self.tick = constants::GAME_INITIAL_TICK;
         // +5% mobs per wave
-        self.mob_count = constants::GAME_INITIAL_MOB_COUNT * (95 + (self.wave * 5)).into() / 100;
+        self.mob_count = 0;
+        self.mob_remaining = constants::GAME_INITIAL_MOB_COUNT
+            * (95 + (self.wave * 5)).into()
+            / 100;
     }
 }
 
@@ -119,7 +122,7 @@ mod tests {
 
     #[test]
     #[available_gas(2000000)]
-    fn test_game_take_damage_no_subflow() {
+    fn test_game_take_damage_no_underflow() {
         let mut game = GameTrait::new(KEY, ID, SEED, NAME);
         game.health = 0;
         game.take_damage();
