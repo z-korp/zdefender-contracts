@@ -230,10 +230,6 @@ fn test_iter_multi_next_wave() {
     assert(!game.over, 'Game: wrong status');
     assert(game.wave == 2, 'Game: wrong wave');
 
-    // [Build]
-    let mut map = MapTrait::from(0, 4);
-    systems.player_actions.build(world, ACCOUNT, map.x(), map.y(), TowerCategory::Bowman);
-
     // [Iter]
     let mut tick = 1;
     loop {
