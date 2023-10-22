@@ -369,8 +369,8 @@ mod actions {
                 if mob.health == 0 {
                     game.gold += mob.reward;
                     game.score += 1;
-                    store.remove_mob(game, mob);
                     game.mob_alive -= 1;
+                    store.set_mob(mob);
                 } else {
                     mobs.append(mob);
                 };
@@ -413,8 +413,8 @@ mod actions {
             // [Check] Mob reached castle
             if status {
                 game.take_damage();
-                store.remove_mob(game, mob);
                 game.mob_alive -= 1;
+                store.set_mob(mob);
             } else {
                 mobs.append(mob);
             }
@@ -434,7 +434,7 @@ mod actions {
             if index == 0 || game.mob_remaining == 0 {
                 return;
             }
-            let mob_key = game.mob_alive.into();
+            let mob_key = game.mob_count.into();
             let mob_id = game.mob_count.into();
             // Category is determined by the remaining mobs
             let elite_rate = if MOB_ELITE_SPAWN_RATE > game.wave {
