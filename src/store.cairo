@@ -178,6 +178,7 @@ impl StoreImpl of StoreTrait {
         // Remove the last tower
         let mut empty_tower = self.tower(game, game.tower_build.into());
         empty_tower.key = last_tower_key;
+        empty_tower.id = tower.id;
         self.set_tower(empty_tower);
     }
 }
