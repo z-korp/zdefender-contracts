@@ -41,7 +41,8 @@ fn test_iter() {
     systems.player_actions.build(world, ACCOUNT, map.x(), map.y(), TowerCategory::Barbarian);
 
     // [Upgrade] 
-    systems.player_actions.upgrade(world, ACCOUNT, map.x(), map.y());
+    let tower_id = 0;
+    systems.player_actions.upgrade(world, ACCOUNT, tower_id);
 
     // [Iter]
     let mut tick = 1;
@@ -67,7 +68,8 @@ fn test_iter_multi() {
     systems.player_actions.build(world, ACCOUNT, map.x(), map.y(), TowerCategory::Barbarian);
 
     // [Upgrade] 
-    systems.player_actions.upgrade(world, ACCOUNT, map.x(), map.y());
+    let tower_id = 0;
+    systems.player_actions.upgrade(world, ACCOUNT, tower_id);
 
     // [Iter]
     let mut tick = 1;
@@ -208,8 +210,9 @@ fn test_iter_multi_next_wave() {
     let mut map = MapTrait::from(1, 5);
     systems.player_actions.build(world, ACCOUNT, map.x(), map.y(), TowerCategory::Barbarian);
 
-    // [Upgrade] 
-    systems.player_actions.upgrade(world, ACCOUNT, map.x(), map.y());
+    // [Upgrade]
+    let tower_id = 0;
+    systems.player_actions.upgrade(world, ACCOUNT, tower_id);
 
     // [Iter]
     let mut tick = 1;

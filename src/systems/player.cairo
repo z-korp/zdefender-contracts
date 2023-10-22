@@ -25,8 +25,8 @@ trait IActions<TContractState> {
         y: u32,
         category: TowerCategory,
     );
-    fn upgrade(self: @TContractState, world: IWorldDispatcher, player: felt252, x: u32, y: u32,);
-    fn sell(self: @TContractState, world: IWorldDispatcher, player: felt252, x: u32, y: u32,);
+    fn upgrade(self: @TContractState, world: IWorldDispatcher, player: felt252, id: u32,);
+    fn sell(self: @TContractState, world: IWorldDispatcher, player: felt252, id: u32,);
     fn iter(self: @TContractState, world: IWorldDispatcher, player: felt252, tick: u32);
     fn run(self: @TContractState, world: IWorldDispatcher, player: felt252);
 }
@@ -167,9 +167,7 @@ mod actions {
         }
 
         #[inline(always)]
-        fn upgrade(
-            self: @ContractState, world: IWorldDispatcher, player: felt252, x: u32, y: u32,
-        ) {
+        fn upgrade(self: @ContractState, world: IWorldDispatcher, player: felt252, id: u32,) {
             // [Setup] Datastore
             let mut store: Store = StoreTrait::new(world);
 
@@ -180,8 +178,7 @@ mod actions {
             assert(!game.over, errors::UPGRADE_INVALID_GAME_STATUS);
 
             // [Effect] Tower
-            let mut map = MapTrait::from(x, y);
-            let mut tower = store.find_tower(game, map.index).expect(errors::UPGRADE_INVALID_TOWER);
+            let mut tower = store.tower(game, id);
 
             // [Check] Tower exists
             assert(tower.level != 0, errors::UPGRADE_INVALID_POSITION);
@@ -200,7 +197,7 @@ mod actions {
         }
 
         #[inline(always)]
-        fn sell(self: @ContractState, world: IWorldDispatcher, player: felt252, x: u32, y: u32,) {
+        fn sell(self: @ContractState, world: IWorldDispatcher, player: felt252, id: u32,) {
             // [Setup] Datastore
             let mut store: Store = StoreTrait::new(world);
 
@@ -211,8 +208,7 @@ mod actions {
             assert(!game.over, errors::SELL_INVALID_GAME_STATUS);
 
             // [Effect] Tower
-            let mut map = MapTrait::from(x, y);
-            let mut tower = store.find_tower(game, map.index).expect(errors::SELL_INVALID_TOWER);
+            let mut tower = store.tower(game, id);
 
             // [Check] Tower exists
             assert(tower.level != 0, errors::SELL_INVALID_POSITION);

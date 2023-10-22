@@ -40,8 +40,9 @@ fn test_run() {
     let mut map = MapTrait::from(1, 5);
     systems.player_actions.build(world, ACCOUNT, map.x(), map.y(), TowerCategory::Barbarian);
 
-    // [Upgrade] 
-    systems.player_actions.upgrade(world, ACCOUNT, map.x(), map.y());
+    // [Upgrade]
+    let tower_id = 0;
+    systems.player_actions.upgrade(world, ACCOUNT, tower_id);
 
     // [Run]
     systems.player_actions.run(world, ACCOUNT);
