@@ -51,3 +51,35 @@ fn test_iter() {
     let game: Game = store.game(ACCOUNT);
     assert(game.over == false, 'Game: wrong status');
 }
+
+#[test]
+#[available_gas(1_000_000_000_000)]
+fn test_iter_multi() {
+    // [Setup]
+    let (world, systems) = setup::spawn_game();
+    let mut store = StoreTrait::new(world);
+
+    // [Create]
+    systems.player_actions.create(world, ACCOUNT, SEED, NAME);
+
+    // [Build]
+    let mut map = MapTrait::from(1, 5);
+    systems.player_actions.build(world, ACCOUNT, map.x(), map.y(), TowerCategory::Barbarian);
+
+    // [Upgrade] 
+    systems.player_actions.upgrade(world, ACCOUNT, map.x(), map.y());
+
+    // [Run]
+    let mut tick = 1;
+    loop {
+        let game: Game = store.game(ACCOUNT);
+        if game.wave > 1 || tick > 100 {
+            break;
+        }
+        systems.player_actions.iter(world, ACCOUNT, tick);
+        tick += 1;
+    };
+
+    // [Assert] Game
+    tick.print();
+}

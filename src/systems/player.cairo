@@ -307,6 +307,12 @@ mod actions {
             // Roll a dice to determine how many mob will spawn
             self._spawn(world, player, tick, ref store, ref game, dice.roll(), ref mobs);
 
+            // [Effect] Update mobs
+            store.set_mobs(mobs.span());
+
+            // [Effect] Update towers
+            store.set_towers(towers.span());
+
             // [Effect] Update game
             if game.health == 0 {
                 game.over();
@@ -364,14 +370,13 @@ mod actions {
                     if tower.can_attack(@mob, tick) {
                         let mut mob = mob;
                         let damage = tower.attack(ref mob, tick);
-                        store.set_mob(mob);
                         if mob.health == 0 {
                             game.gold += mob.reward;
                             game.mob_alive -= 1;
+                            store.set_mob(mob);
                         } else {
                             mobs.append(mob);
                         };
-                        store.set_tower(tower);
 
                         // [Event] Hit
                         let hit = Hit {
@@ -408,11 +413,11 @@ mod actions {
                 Option::Some(mob) => {
                     let mut mob = mob;
                     let status = mob.move(tick);
-                    store.set_mob(mob);
                     // [Check] Mob reached castle
                     if status {
                         game.take_damage();
                         game.mob_alive -= 1;
+                        store.set_mob(mob);
                     } else {
                         mobs.append(mob);
                     }
@@ -437,7 +442,7 @@ mod actions {
             if index == 0 || game.mob_remaining == 0 {
                 return;
             }
-            let mob_key = game.mob_alive.into();
+            let mob_key = game.mob_count.into();
             let mob_id = game.mob_count.into();
             // Category is determined by the remaining mobs
             let elite_rate = if MOB_ELITE_SPAWN_RATE > game.wave {
@@ -460,7 +465,6 @@ mod actions {
                 tick: tick,
                 wave: game.wave
             );
-            store.set_mob(mob);
             mobs.append(mob);
             game.mob_count += 1;
             game.mob_alive += 1;
