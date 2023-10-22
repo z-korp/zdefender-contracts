@@ -10,6 +10,10 @@ use zdefender::models::game::{Game, GameTrait};
 use zdefender::models::mob::{Mob, MobTrait};
 use zdefender::models::tower::{Tower, TowerTrait};
 
+mod errors {
+    const STORE_TOWER_KEY_OUT_OF_BOUNDS: felt252 = 'Store: tower key out of bounds';
+}
+
 /// Store struct.
 #[derive(Drop)]
 struct Store {
@@ -71,6 +75,7 @@ impl StoreImpl of StoreTrait {
 
     #[inline(always)]
     fn tower(ref self: Store, game: Game, key: u32) -> Tower {
+        assert(key < game.tower_count.into(), errors::STORE_TOWER_KEY_OUT_OF_BOUNDS);
         let tower_key = (game.id, key);
         get!(self.world, tower_key.into(), (Tower))
     }
@@ -162,7 +167,7 @@ impl StoreImpl of StoreTrait {
 
     #[inline(always)]
     fn remove_tower(ref self: Store, game: Game, tower: Tower) {
-        let last_tower_key: u32 = game.tower_count.into();
+        let last_tower_key: u32 = game.tower_count.into() - 1;
         // Skip if the tower key is the latest key
         if last_tower_key == tower.key {
             return;

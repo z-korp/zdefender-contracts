@@ -28,6 +28,7 @@ const NAME: felt252 = 'NAME';
 
 #[test]
 #[available_gas(1_000_000_000)]
+#[should_panic(expected: ('Store: tower key out of bounds',))]
 fn test_sell() {
     // [Setup]
     let (world, systems) = setup::spawn_game();
@@ -54,5 +55,4 @@ fn test_sell() {
 
     // [Assert] Tower
     let tower: Tower = store.tower(game, 0);
-    assert(tower.level == 0, 'Tower: wrong level');
 }
