@@ -408,7 +408,6 @@ mod actions {
             }
             index -= 1;
             let mut mob = mobs.pop_front().unwrap();
-            let mut mob = mob;
             let status = mob.move(tick);
             // [Check] Mob reached castle
             if status {
