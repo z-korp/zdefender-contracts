@@ -256,9 +256,6 @@ mod actions {
                     );
                 tick += 1;
             };
-
-            // [Effect] Update game
-            store.set_game(game);
         }
 
         fn iter(self: @ContractState, world: IWorldDispatcher, player: felt252, tick: u32) {
@@ -371,6 +368,7 @@ mod actions {
                 let damage = tower.attack(ref mob, tick);
                 if mob.health == 0 {
                     game.gold += mob.reward;
+                    game.score += 1;
                     game.mob_alive -= 1;
                     store.set_mob(mob);
                 } else {

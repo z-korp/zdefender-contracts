@@ -20,6 +20,7 @@ struct Game {
     gold: u16,
     health: u8,
     tick: u32,
+    score: u32,
 }
 
 trait GameTrait {
@@ -46,6 +47,7 @@ impl GameImpl of GameTrait {
             gold: constants::GAME_INITIAL_GOLD,
             health: constants::GAME_INITIAL_HEALTH,
             tick: constants::GAME_INITIAL_TICK,
+            score: 0,
         }
     }
 
