@@ -154,15 +154,17 @@ mod actions {
             assert(!store.is_tower(game, map.index), errors::BUILD_INVALID_POSITION);
 
             // [Effect] Tower
+            let tower_key: u32 = game.tower_build.into();
             let tower_id: u32 = game.tower_count.into();
             let mut tower = TowerTrait::new(
-                game_id: game.id, key: tower_id, index: map.index, category: category
+                game_id: game.id, key: tower_key, id: tower_id, index: map.index, category: category
             );
             store.set_tower(tower);
 
             // [Effect] Game
             game.gold -= cost;
             game.tower_count += 1;
+            game.tower_build += 1;
             store.set_game(game);
         }
 
@@ -218,7 +220,7 @@ mod actions {
             store.remove_tower(game, tower);
 
             // [Effect] Game
-            game.tower_count -= 1;
+            game.tower_build -= 1;
             game.gold += cost;
             store.set_game(game);
         }

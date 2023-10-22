@@ -12,7 +12,8 @@ struct Game {
     name: felt252,
     seed: felt252,
     over: bool,
-    tower_count: u8,
+    tower_count: u16,
+    tower_build: u16,
     mob_count: u16,
     mob_remaining: u16,
     mob_alive: u16,
@@ -40,6 +41,7 @@ impl GameImpl of GameTrait {
             seed: seed,
             over: false,
             tower_count: 0,
+            tower_build: 0,
             mob_count: 0,
             mob_remaining: constants::GAME_INITIAL_MOB_COUNT,
             mob_alive: 0,
@@ -104,6 +106,7 @@ mod tests {
         assert(game.name == NAME, 'Game: wrong name');
         assert(game.over == false, 'Game: wrong over');
         assert(game.tower_count == 0, 'Game: wrong tower_count');
+        assert(game.tower_build == 0, 'Game: wrong tower_build');
         assert(game.mob_count == 0, 'Game: wrong mob_count');
         assert(game.mob_remaining > 0, 'Game: wrong mob_remaining');
         assert(game.mob_alive == 0, 'Game: wrong mob_alive');

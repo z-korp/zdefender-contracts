@@ -76,13 +76,13 @@ impl StoreImpl of StoreTrait {
 
     #[inline(always)]
     fn tower(ref self: Store, game: Game, key: u32) -> Tower {
-        assert(key < game.tower_count.into(), errors::STORE_TOWER_KEY_OUT_OF_BOUNDS);
+        assert(key < game.tower_build.into(), errors::STORE_TOWER_KEY_OUT_OF_BOUNDS);
         let tower_key = (game.id, key);
         get!(self.world, tower_key.into(), (Tower))
     }
 
     fn towers(ref self: Store, game: Game) -> Array<Tower> {
-        let mut index: u32 = game.tower_count.into();
+        let mut index: u32 = game.tower_build.into();
         let mut towers: Array<Tower> = array![];
         loop {
             if index == 0 {
@@ -168,13 +168,13 @@ impl StoreImpl of StoreTrait {
 
     #[inline(always)]
     fn remove_tower(ref self: Store, game: Game, tower: Tower) {
-        let last_tower_key: u32 = game.tower_count.into() - 1;
+        let mut last_tower_key: u32 = game.tower_build.into() - 1;
         // Skip if the tower key is the latest key
         if last_tower_key == tower.key {
-            return;
+            last_tower_key += 1;
         }
         let mut last_tower = self.tower(game, last_tower_key);
-        last_tower.key = tower.key;
+        last_tower.id = tower.id;
         self.set_tower(last_tower);
     }
 }

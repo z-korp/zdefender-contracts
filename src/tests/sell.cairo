@@ -28,7 +28,7 @@ const NAME: felt252 = 'NAME';
 
 #[test]
 #[available_gas(1_000_000_000)]
-#[should_panic(expected: ('Store: tower key out of bounds',))]
+#[should_panic(expected: ('Store: tower key out of bounds', 'ENTRYPOINT_FAILED'))]
 fn test_sell() {
     // [Setup]
     let (world, systems) = setup::spawn_game();
