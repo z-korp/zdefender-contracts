@@ -100,8 +100,10 @@ mod actions {
     struct Hit {
         game_id: u32,
         tick: u32,
-        from: u32,
-        to: u32,
+        from_id: u32,
+        from_index: u32,
+        to_id: u32,
+        to_index: u32,
         damage: u32,
     }
 
@@ -376,7 +378,15 @@ mod actions {
                 };
 
                 // [Event] Hit
-                let hit = Hit { game_id: game.id, tick, from: tower.id, to: mob.id, damage, };
+                let hit = Hit {
+                    game_id: game.id,
+                    tick,
+                    from_id: tower.id,
+                    from_index: tower.index,
+                    to_id: mob.id,
+                    to_index: mob.index,
+                    damage,
+                };
                 emit!(world, hit);
             } else {
                 mobs.append(mob);
