@@ -17,7 +17,7 @@ use zdefender::models::tower::{
     TOWER_SELL_RATIO_DEN
 };
 use zdefender::systems::player::{IActionsDispatcherTrait, actions::Hit};
-use zdefender::helpers::map::{Map, MapTrait};
+use zdefender::helpers::map::{Map, MapTrait, SPAWN_INDEX};
 use zdefender::tests::setup::{setup, setup::Systems, setup::PLAYER};
 
 // Constants
@@ -43,7 +43,7 @@ fn test_iter() {
     // [Upgrade] 
     systems.player_actions.upgrade(world, ACCOUNT, map.x(), map.y());
 
-    // [Run]
+    // [Iter]
     let mut tick = 1;
     systems.player_actions.iter(world, ACCOUNT, tick);
 
@@ -69,7 +69,7 @@ fn test_iter_multi() {
     // [Upgrade] 
     systems.player_actions.upgrade(world, ACCOUNT, map.x(), map.y());
 
-    // [Run]
+    // [Iter]
     let mut tick = 1;
     loop {
         let game: Game = store.game(ACCOUNT);
@@ -81,5 +81,115 @@ fn test_iter_multi() {
     };
 
     // [Assert] Game
-    tick.print();
+    let game = store.game(ACCOUNT);
+    assert(game.over == false, 'Game: wrong status');
+    assert(game.wave == 2, 'Game: wrong wave');
+}
+
+#[test]
+#[available_gas(1_000_000_000_000)]
+fn test_iter_build() {
+    // [Setup]
+    let (world, systems) = setup::spawn_game();
+    let mut store = StoreTrait::new(world);
+
+    // [Create]
+    systems.player_actions.create(world, ACCOUNT, SEED, NAME);
+
+    // [Iter]
+    let mut tick = 1;
+    loop {
+        if tick > 5 {
+            break;
+        }
+        systems.player_actions.iter(world, ACCOUNT, tick);
+        tick += 1;
+    };
+
+    // [Assert] Game
+    let game = store.game(ACCOUNT);
+    assert(game.mob_alive > 0, 'Game: wrong mob alive count');
+
+    // [Assert] Mob
+    let mob = store.mob(game, 0);
+    let mob_index = mob.index;
+    assert(mob_index != SPAWN_INDEX, 'Mob: wrong index');
+
+    // [Build]
+    let mut map = MapTrait::from(1, 5);
+    systems.player_actions.build(world, ACCOUNT, map.x(), map.y(), TowerCategory::Barbarian);
+
+    // [Iter]
+    loop {
+        if tick > 10 {
+            break;
+        }
+        systems.player_actions.iter(world, ACCOUNT, tick);
+        tick += 1;
+    };
+
+    // [Assert] Game
+    let game = store.game(ACCOUNT);
+    assert(game.mob_alive > 0, 'Game: wrong mob alive count');
+
+    // [Assert] Mob
+    let mob = store.mob(game, 0);
+    assert(mob.index != mob_index, 'Mob: wrong index');
+}
+
+#[test]
+#[available_gas(1_000_000_000_000)]
+fn test_iter_game_over() {
+    // [Setup]
+    let (world, systems) = setup::spawn_game();
+    let mut store = StoreTrait::new(world);
+
+    // [Create]
+    systems.player_actions.create(world, ACCOUNT, SEED, NAME);
+
+    // [Iter]
+    let mut tick = 1;
+    loop {
+        let game: Game = store.game(ACCOUNT);
+        if game.over || tick > 100 {
+            break;
+        }
+        systems.player_actions.iter(world, ACCOUNT, tick);
+        tick += 1;
+    };
+
+    // [Assert] Game
+    let game = store.game(ACCOUNT);
+    assert(game.over, 'Game: wrong status');
+}
+
+#[test]
+#[available_gas(1_000_000_000_000)]
+fn test_iter_farest_tower() {
+    // [Setup]
+    let (world, systems) = setup::spawn_game();
+    let mut store = StoreTrait::new(world);
+
+    // [Create]
+    systems.player_actions.create(world, ACCOUNT, SEED, NAME);
+
+    // [Build]
+    let mut map = MapTrait::from(0, 0);
+    systems.player_actions.build(world, ACCOUNT, map.x(), map.y(), TowerCategory::Barbarian);
+
+    // [Iter]
+    let mut tick = 1;
+    loop {
+        let game: Game = store.game(ACCOUNT);
+        if game.over || tick > 100 {
+            break;
+        }
+        systems.player_actions.iter(world, ACCOUNT, tick);
+        tick += 1;
+    };
+
+    // [Assert] Game
+    let game = store.game(ACCOUNT);
+    assert(tick <= 100, 'Game: wrong tick');
+    assert(game.over, 'Game: wrong status');
 }

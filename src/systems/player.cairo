@@ -365,34 +365,26 @@ mod actions {
                 return;
             }
             index -= 1;
-            match mobs.pop_front() {
-                Option::Some(mob) => {
-                    if tower.can_attack(@mob, tick) {
-                        let mut mob = mob;
-                        let damage = tower.attack(ref mob, tick);
-                        if mob.health == 0 {
-                            game.gold += mob.reward;
-                            game.mob_alive -= 1;
-                            store.set_mob(mob);
-                        } else {
-                            mobs.append(mob);
-                        };
+            let mut mob = mobs.pop_front().unwrap();
+            if tower.can_attack(@mob, tick) {
+                let mut mob = mob;
+                let damage = tower.attack(ref mob, tick);
+                if mob.health == 0 {
+                    game.gold += mob.reward;
+                    game.mob_alive -= 1;
+                    store.set_mob(mob);
+                } else {
+                    mobs.append(mob);
+                };
 
-                        // [Event] Hit
-                        let hit = Hit {
-                            game_id: game.id, tick, from: tower.id, to: mob.id, damage,
-                        };
-                        emit!(world, hit);
-                    };
-                    return self
-                        ._attack_mob(
-                            world, player, tick, ref store, ref game, ref tower, ref mobs, index
-                        );
-                },
-                Option::None => {
-                    return;
-                },
+                // [Event] Hit
+                let hit = Hit { game_id: game.id, tick, from: tower.id, to: mob.id, damage, };
+                emit!(world, hit);
+            } else {
+                mobs.append(mob);
             };
+            return self
+                ._attack_mob(world, player, tick, ref store, ref game, ref tower, ref mobs, index);
         }
 
         fn _move(
@@ -409,24 +401,18 @@ mod actions {
                 return;
             }
             index -= 1;
-            match mobs.pop_front() {
-                Option::Some(mob) => {
-                    let mut mob = mob;
-                    let status = mob.move(tick);
-                    // [Check] Mob reached castle
-                    if status {
-                        game.take_damage();
-                        game.mob_alive -= 1;
-                        store.set_mob(mob);
-                    } else {
-                        mobs.append(mob);
-                    }
-                    return self._move(world, player, tick, ref store, ref game, ref mobs, index);
-                },
-                Option::None => {
-                    return;
-                },
-            };
+            let mut mob = mobs.pop_front().unwrap();
+            let mut mob = mob;
+            let status = mob.move(tick);
+            // [Check] Mob reached castle
+            if status {
+                game.take_damage();
+                game.mob_alive -= 1;
+                store.set_mob(mob);
+            } else {
+                mobs.append(mob);
+            }
+            return self._move(world, player, tick, ref store, ref game, ref mobs, index);
         }
 
         fn _spawn(
