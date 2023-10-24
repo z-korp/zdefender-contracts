@@ -3,6 +3,7 @@
 // Internal imports
 
 use zdefender::constants;
+use zdefender::models::mob::{Category as MobCategory, MOB_ELITE_SPAWN_RATE};
 
 #[derive(Model, Copy, Drop, Serde)]
 struct Game {
@@ -29,6 +30,7 @@ trait GameTrait {
     fn take_damage(ref self: Game);
     fn over(ref self: Game);
     fn next(ref self: Game);
+    fn spawn(self: @Game) -> MobCategory;
 }
 
 impl GameImpl of GameTrait {
@@ -76,6 +78,22 @@ impl GameImpl of GameTrait {
         self.mob_remaining = constants::GAME_INITIAL_MOB_COUNT
             * (95 + (self.wave * 5)).into()
             / 100;
+    }
+
+    #[inline(always)]
+    fn spawn(self: @Game) -> MobCategory {
+        let elite_rate = if MOB_ELITE_SPAWN_RATE > *self.wave {
+            MOB_ELITE_SPAWN_RATE - *self.wave
+        } else {
+            1
+        };
+        if *self.mob_remaining == 1 {
+            MobCategory::Boss
+        } else if *self.mob_remaining % elite_rate.into() == 0 {
+            MobCategory::Elite
+        } else {
+            MobCategory::Normal
+        }
     }
 }
 
