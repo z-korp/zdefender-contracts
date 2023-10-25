@@ -73,22 +73,18 @@ impl MobImpl of MobTrait {
     }
 
     fn move(ref self: Mob, tick: u32) -> bool {
-        let mut index = self.speed;
-        loop {
-            // [Break] If all moves done
-            if index == 0 {
-                break false;
-            }
-            // [Break] Mob is reaching the player castle
-            let mut map = MapTrait::load(self.index);
-            self.tick = tick;
-            if map.is_idle() {
-                self.health = 0;
-                break true;
-            }
-            self.index = map.next();
-            index -= 1;
+        if 0 == self.health.into() {
+            return false;
         }
+        // [Break] Mob is reaching the player castle
+        let mut map = MapTrait::load(self.index);
+        self.tick = tick;
+        if map.is_idle() {
+            self.health = 0;
+            return true;
+        }
+        self.index = map.next();
+        false
     }
 
     #[inline(always)]
@@ -106,7 +102,7 @@ impl MobImpl of MobTrait {
         };
         let health = health * wave.into();
         let defense = defense * wave.into();
-        let reward = reward * (70 + wave.into() * 30) / 100;
+        let reward = reward * (90 + wave.into() * 10) / 100;
         (health, speed, defense, reward)
     }
 }

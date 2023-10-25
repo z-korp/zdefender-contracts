@@ -32,10 +32,9 @@ trait StoreTrait {
     fn is_tower(ref self: Store, game: Game, index: u32) -> bool;
     fn set_game(ref self: Store, game: Game);
     fn set_mob(ref self: Store, mob: Mob);
-    fn set_mobs(ref self: Store, mobs: Span<Mob>);
     fn remove_mob(ref self: Store, game: Game, mob: Mob);
     fn set_tower(ref self: Store, tower: Tower);
-    fn set_towers(ref self: Store, towers: Span<Tower>);
+    fn set_towers(ref self: Store, ref towers: Array<Tower>);
     fn remove_tower(ref self: Store, game: Game, tower: Tower);
 }
 
@@ -126,28 +125,20 @@ impl StoreImpl of StoreTrait {
         set!(self.world, (mob));
     }
 
-    fn set_mobs(ref self: Store, mut mobs: Span<Mob>) {
-        loop {
-            match mobs.pop_front() {
-                Option::Some(mob) => self.set_mob(*mob),
-                Option::None => {
-                    break;
-                },
-            };
-        };
-    }
-
     #[inline(always)]
     fn remove_mob(ref self: Store, game: Game, mob: Mob) {
-        let last_mob_key: u32 = game.mob_alive.into() - 1;
-        // Skip if the mob key is the latest key
-        if last_mob_key == mob.key {
-            return;
+        let mut last_mob_key: u32 = game.mob_alive.into(); // Already sub
+        // Replace the mob with the last mob
+        if last_mob_key != mob.key {
+            let mut last_mob = self.mob(game, last_mob_key);
+            last_mob.key = mob.key;
+            self.set_mob(last_mob);
         }
-        // Move last mob to the removed mob position
-        let mut last_mob = self.mob(game, last_mob_key);
-        last_mob.key = mob.key;
-        self.set_mob(last_mob);
+        // Remove the last mob
+        let mut empty_mob = self.mob(game, game.mob_alive.into() + 1);
+        empty_mob.key = last_mob_key;
+        empty_mob.id = mob.id;
+        self.set_mob(empty_mob);
     }
 
     #[inline(always)]
@@ -155,10 +146,10 @@ impl StoreImpl of StoreTrait {
         set!(self.world, (tower));
     }
 
-    fn set_towers(ref self: Store, mut towers: Span<Tower>) {
+    fn set_towers(ref self: Store, ref towers: Array<Tower>) {
         loop {
             match towers.pop_front() {
-                Option::Some(tower) => self.set_tower(*tower),
+                Option::Some(tower) => self.set_tower(tower),
                 Option::None => {
                     break;
                 },

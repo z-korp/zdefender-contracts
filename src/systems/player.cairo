@@ -230,7 +230,7 @@ mod actions {
             let mut store: Store = StoreTrait::new(world);
 
             // [Effect] Game entity
-            let game: Game = store.game(player);
+            let mut game: Game = store.game(player);
 
             // [Check] Game is not over
             assert(!game.over, errors::RUN_INVALID_GAME_STATUS);
@@ -239,23 +239,24 @@ mod actions {
             assert(game.mob_remaining > 0 || game.mob_alive > 0, errors::RUN_INVALID_MOB_STATUS);
 
             // [Effect] Tick loop
-            let mut dice = DiceTrait::new(game.seed, game.wave, 0);
+            let mut dice = DiceTrait::new(game.seed, game.wave, game.tick);
             let mut towers = store.towers(game);
-            let mut mobs = store.mobs(game);
             let wave = game.wave;
-            let mut tick = 1;
             loop {
+                game.tick += 1;
+                self._iter(world, player, ref store, ref game, ref dice, ref towers);
+
                 // [Check] Game or wave is over
-                let mut game: Game = store.game(player);
                 if game.health == 0 || game.wave != wave {
                     break;
-                }
-                self
-                    ._iter(
-                        world, player, tick, ref store, ref game, ref dice, ref towers, ref mobs
-                    );
-                tick += 1;
+                };
             };
+
+            // [Effect] Update towers
+            store.set_towers(ref towers);
+
+            // [Effect] Update game
+            store.set_game(game);
         }
 
         fn iter(self: @ContractState, world: IWorldDispatcher, player: felt252, tick: u32) {
@@ -270,197 +271,108 @@ mod actions {
             assert(game.mob_remaining > 0 || game.mob_alive > 0, errors::ITER_INVALID_MOB_STATUS);
 
             // [Effect] Run iteration
-            let mut dice = DiceTrait::new(game.seed, game.wave, tick);
+            game.tick += 1;
+            let mut dice = DiceTrait::new(game.seed, game.wave, game.tick);
             let mut towers = store.towers(game);
-            let mut mobs = store.mobs(game);
-            self._iter(world, player, tick, ref store, ref game, ref dice, ref towers, ref mobs);
+            self._iter(world, player, ref store, ref game, ref dice, ref towers);
+
+            // [Effect] Update towers
+            store.set_towers(ref towers);
+
+            // [Effect] Update game
+            store.set_game(game);
         }
     }
 
     #[generate_trait]
     impl Internal of InternalTrait {
-        #[inline(always)]
         fn _iter(
             self: @ContractState,
             world: IWorldDispatcher,
             player: felt252,
-            tick: u32,
             ref store: Store,
             ref game: Game,
             ref dice: Dice,
             ref towers: Array<Tower>,
-            ref mobs: Array<Mob>,
         ) {
-            // [Effect] Perform tower attacks
-            self
-                ._attack(
-                    world, player, tick, ref store, ref game, ref towers, towers.len(), ref mobs
-                );
+            let mut mob_index: u32 = 0;
+            loop {
+                if mob_index == game.mob_alive.into() {
+                    break;
+                };
+                let mut mob = store.mob(game, mob_index);
 
-            // [Effect] Perform mob moves
-            self._move(world, player, tick, ref store, ref game, ref mobs, mobs.len());
+                // [Effect] Perform tower attacks
+                let mut tower_index: felt252 = towers.len().into();
+                loop {
+                    if 0 == tower_index {
+                        break;
+                    };
+                    tower_index -= 1;
+                    let mut tower = towers.pop_front().unwrap();
+
+                    if tower.can_attack(@mob, game.tick) {
+                        let damage = tower.attack(ref mob, game.tick);
+                        if 0 == mob.health.into() {
+                            game.gold += mob.reward;
+                            game.score += 1;
+                            game.mob_alive -= 1;
+                        };
+
+                        // [Event] Hit
+                        let hit = Hit {
+                            game_id: game.id,
+                            tick: game.tick,
+                            from_id: tower.id,
+                            from_index: tower.index,
+                            to_id: mob.id,
+                            to_index: mob.index,
+                            damage,
+                        };
+                        emit!(world, hit);
+                    };
+
+                    towers.append(tower);
+                };
+
+                // [Effect] Perform mob moves
+                // [Check] Mob reached castle
+                if mob.move(game.tick) {
+                    game.take_damage();
+                    game.mob_alive -= 1;
+                };
+
+                // [Effect] Update mob
+                if 0 == mob.health.into() {
+                    store.remove_mob(game, mob);
+                } else {
+                    store.set_mob(mob);
+                    mob_index += 1;
+                };
+            };
 
             // [Effect] Perform mob spawns
-            // Roll a dice to determine how many mob will spawn
-            self._spawn(world, player, tick, ref store, ref game, dice.roll(), ref mobs);
-
-            // [Effect] Update mobs
-            store.set_mobs(mobs.span());
-
-            // [Effect] Update towers
-            store.set_towers(towers.span());
+            if game.can_spawn() && 0 != game.mob_remaining.into() * dice.roll().into() {
+                let mob = MobTrait::new(
+                    game_id: game.id,
+                    key: game.mob_alive.into(),
+                    id: game.mob_count.into(),
+                    category: game.spawn(),
+                    tick: game.tick,
+                    wave: game.wave
+                );
+                game.mob_count += 1;
+                game.mob_alive += 1;
+                game.mob_remaining -= 1;
+                store.set_mob(mob);
+            };
 
             // [Effect] Update game
-            if game.health == 0 {
+            if 0 == game.health.into() {
                 game.over();
-            } else if game.mob_alive == 0 && game.mob_remaining == 0 {
+            } else if 0 == game.mob_alive.into() + game.mob_remaining.into() {
                 game.next();
             };
-            game.tick = tick;
-            store.set_game(game);
-        }
-
-        fn _attack(
-            self: @ContractState,
-            world: IWorldDispatcher,
-            player: felt252,
-            tick: u32,
-            ref store: Store,
-            ref game: Game,
-            ref towers: Array<Tower>,
-            mut index: u32,
-            ref mobs: Array<Mob>,
-        ) {
-            if index == 0 {
-                return;
-            }
-            index -= 1;
-            let mut tower = towers.pop_front().unwrap();
-            if tower.is_idle(tick) {
-                self
-                    ._attack_mob(
-                        world, player, tick, ref store, ref game, ref tower, ref mobs, mobs.len()
-                    );
-            }
-            towers.append(tower);
-            return self
-                ._attack(world, player, tick, ref store, ref game, ref towers, index, ref mobs);
-        }
-
-        fn _attack_mob(
-            self: @ContractState,
-            world: IWorldDispatcher,
-            player: felt252,
-            tick: u32,
-            ref store: Store,
-            ref game: Game,
-            ref tower: Tower,
-            ref mobs: Array<Mob>,
-            mut index: u32,
-        ) {
-            if index == 0 {
-                return;
-            }
-            index -= 1;
-            let mut mob = mobs.pop_front().unwrap();
-            if tower.can_attack(@mob, tick) {
-                let mut mob = mob;
-                let damage = tower.attack(ref mob, tick);
-                if mob.health == 0 {
-                    game.gold += mob.reward;
-                    game.score += 1;
-                    game.mob_alive -= 1;
-                    store.set_mob(mob);
-                } else {
-                    mobs.append(mob);
-                };
-
-                // [Event] Hit
-                let hit = Hit {
-                    game_id: game.id,
-                    tick,
-                    from_id: tower.id,
-                    from_index: tower.index,
-                    to_id: mob.id,
-                    to_index: mob.index,
-                    damage,
-                };
-                emit!(world, hit);
-            } else {
-                mobs.append(mob);
-            };
-            return self
-                ._attack_mob(world, player, tick, ref store, ref game, ref tower, ref mobs, index);
-        }
-
-        fn _move(
-            self: @ContractState,
-            world: IWorldDispatcher,
-            player: felt252,
-            tick: u32,
-            ref store: Store,
-            ref game: Game,
-            ref mobs: Array<Mob>,
-            mut index: u32,
-        ) {
-            if index == 0 {
-                return;
-            }
-            index -= 1;
-            let mut mob = mobs.pop_front().unwrap();
-            let status = mob.move(tick);
-            // [Check] Mob reached castle
-            if status {
-                game.take_damage();
-                game.mob_alive -= 1;
-                store.set_mob(mob);
-            } else {
-                mobs.append(mob);
-            }
-            return self._move(world, player, tick, ref store, ref game, ref mobs, index);
-        }
-
-        fn _spawn(
-            self: @ContractState,
-            world: IWorldDispatcher,
-            player: felt252,
-            tick: u32,
-            ref store: Store,
-            ref game: Game,
-            index: u8,
-            ref mobs: Array<Mob>,
-        ) {
-            if index == 0 || game.mob_remaining == 0 {
-                return;
-            }
-            let mob_key = game.mob_count.into();
-            let mob_id = game.mob_count.into();
-            // Category is determined by the remaining mobs
-            let elite_rate = if MOB_ELITE_SPAWN_RATE > game.wave {
-                MOB_ELITE_SPAWN_RATE - game.wave
-            } else {
-                1
-            };
-            let category = if game.mob_remaining == 1 {
-                MobCategory::Boss
-            } else if game.mob_remaining % elite_rate.into() == 0 {
-                MobCategory::Elite
-            } else {
-                MobCategory::Normal
-            };
-            let mut mob = MobTrait::new(
-                game_id: game.id,
-                key: mob_key,
-                id: mob_id,
-                category: category,
-                tick: tick,
-                wave: game.wave
-            );
-            mobs.append(mob);
-            game.mob_count += 1;
-            game.mob_alive += 1;
-            game.mob_remaining -= 1;
-            self._spawn(world, player, tick, ref store, ref game, index - 1, ref mobs)
         }
     }
 }

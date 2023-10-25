@@ -3,6 +3,11 @@
 // Internal imports
 
 use zdefender::constants;
+use zdefender::models::mob::{Category as MobCategory, MOB_ELITE_SPAWN_RATE};
+
+// Constants
+
+const GAME_MOB_LIMIT: u16 = 3;
 
 #[derive(Model, Copy, Drop, Serde)]
 struct Game {
@@ -26,6 +31,8 @@ struct Game {
 
 trait GameTrait {
     fn new(key: felt252, id: u32, seed: felt252, name: felt252) -> Game;
+    fn can_spawn(self: Game) -> bool;
+    fn spawn(self: Game) -> MobCategory;
     fn take_damage(ref self: Game);
     fn over(ref self: Game);
     fn next(ref self: Game);
@@ -54,6 +61,27 @@ impl GameImpl of GameTrait {
     }
 
     #[inline(always)]
+    fn can_spawn(self: Game) -> bool {
+        self.mob_alive < GAME_MOB_LIMIT
+    }
+
+    #[inline(always)]
+    fn spawn(self: Game) -> MobCategory {
+        let elite_rate = if MOB_ELITE_SPAWN_RATE > self.wave {
+            MOB_ELITE_SPAWN_RATE - self.wave
+        } else {
+            1
+        };
+        if self.mob_remaining == 1 {
+            MobCategory::Boss
+        } else if self.mob_remaining % elite_rate.into() == 0 {
+            MobCategory::Elite
+        } else {
+            MobCategory::Normal
+        }
+    }
+
+    #[inline(always)]
     fn take_damage(ref self: Game) {
         self.health -= if self.health > 0 {
             1
@@ -70,7 +98,6 @@ impl GameImpl of GameTrait {
     #[inline(always)]
     fn next(ref self: Game) {
         self.wave += 1;
-        self.tick = constants::GAME_INITIAL_TICK;
         // +5% mobs per wave
         self.mob_count = 0;
         self.mob_remaining = constants::GAME_INITIAL_MOB_COUNT
@@ -84,6 +111,10 @@ mod tests {
     // Core imports
 
     use debug::PrintTrait;
+
+    // Internal imports
+
+    use zdefender::constants;
 
     // Local imports
 
@@ -108,12 +139,14 @@ mod tests {
         assert(game.tower_count == 0, 'Game: wrong tower_count');
         assert(game.tower_build == 0, 'Game: wrong tower_build');
         assert(game.mob_count == 0, 'Game: wrong mob_count');
-        assert(game.mob_remaining > 0, 'Game: wrong mob_remaining');
+        assert(
+            game.mob_remaining == constants::GAME_INITIAL_MOB_COUNT, 'Game: wrong mob_remaining'
+        );
         assert(game.mob_alive == 0, 'Game: wrong mob_alive');
         assert(game.wave == 1, 'Game: wrong wave');
-        assert(game.gold > 0, 'Game: wrong gold');
-        assert(game.health > 0, 'Game: wrong health');
-        assert(game.tick > 0, 'Game: wrong tick');
+        assert(game.gold == constants::GAME_INITIAL_GOLD, 'Game: wrong gold');
+        assert(game.health == constants::GAME_INITIAL_HEALTH, 'Game: wrong health');
+        assert(game.tick == constants::GAME_INITIAL_TICK, 'Game: wrong tick');
     }
 
     #[test]
