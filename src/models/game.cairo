@@ -5,6 +5,10 @@
 use zdefender::constants;
 use zdefender::models::mob::{Category as MobCategory, MOB_ELITE_SPAWN_RATE};
 
+// Constants
+
+const GAME_MOB_LIMIT: u16 = 3;
+
 #[derive(Model, Copy, Drop, Serde)]
 struct Game {
     #[key]
@@ -27,10 +31,11 @@ struct Game {
 
 trait GameTrait {
     fn new(key: felt252, id: u32, seed: felt252, name: felt252) -> Game;
+    fn can_spawn(self: Game) -> bool;
+    fn spawn(self: Game) -> MobCategory;
     fn take_damage(ref self: Game);
     fn over(ref self: Game);
     fn next(ref self: Game);
-    fn spawn(self: Game) -> MobCategory;
 }
 
 impl GameImpl of GameTrait {
@@ -56,6 +61,27 @@ impl GameImpl of GameTrait {
     }
 
     #[inline(always)]
+    fn can_spawn(self: Game) -> bool {
+        self.mob_alive < GAME_MOB_LIMIT
+    }
+
+    #[inline(always)]
+    fn spawn(self: Game) -> MobCategory {
+        let elite_rate = if MOB_ELITE_SPAWN_RATE > self.wave {
+            MOB_ELITE_SPAWN_RATE - self.wave
+        } else {
+            1
+        };
+        if self.mob_remaining == 1 {
+            MobCategory::Boss
+        } else if self.mob_remaining % elite_rate.into() == 0 {
+            MobCategory::Elite
+        } else {
+            MobCategory::Normal
+        }
+    }
+
+    #[inline(always)]
     fn take_damage(ref self: Game) {
         self.health -= if self.health > 0 {
             1
@@ -77,22 +103,6 @@ impl GameImpl of GameTrait {
         self.mob_remaining = constants::GAME_INITIAL_MOB_COUNT
             * (95 + (self.wave * 5)).into()
             / 100;
-    }
-
-    #[inline(always)]
-    fn spawn(self: Game) -> MobCategory {
-        let elite_rate = if MOB_ELITE_SPAWN_RATE > self.wave {
-            MOB_ELITE_SPAWN_RATE - self.wave
-        } else {
-            1
-        };
-        if self.mob_remaining == 1 {
-            MobCategory::Boss
-        } else if self.mob_remaining % elite_rate.into() == 0 {
-            MobCategory::Elite
-        } else {
-            MobCategory::Normal
-        }
     }
 }
 
