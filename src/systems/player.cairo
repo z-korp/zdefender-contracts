@@ -239,24 +239,22 @@ mod actions {
             assert(game.mob_remaining > 0 || game.mob_alive > 0, errors::RUN_INVALID_MOB_STATUS);
 
             // [Effect] Tick loop
-            let mut dice = DiceTrait::new(game.seed, game.wave, 0);
+            let mut dice = DiceTrait::new(game.seed, game.wave, game.tick);
             let wave = game.wave;
-            let mut tick = 1;
             loop {
                 let mut towers = store.towers(game);
                 let mut mobs = store.mobs(game);
-                self
-                    ._iter(
-                        world, player, tick, ref store, ref game, ref dice, ref towers, ref mobs
-                    );
+                self._iter(world, player, ref store, ref game, ref dice, ref towers, ref mobs);
 
                 // [Check] Game or wave is over
-                game = store.game(player);
                 if game.health == 0 || game.wave != wave {
                     break;
-                }
-                tick += 1;
+                };
+                game.tick += 1;
             };
+
+            // [Effect] Update game
+            store.set_game(game);
         }
 
         fn iter(self: @ContractState, world: IWorldDispatcher, player: felt252, tick: u32) {
@@ -271,10 +269,14 @@ mod actions {
             assert(game.mob_remaining > 0 || game.mob_alive > 0, errors::ITER_INVALID_MOB_STATUS);
 
             // [Effect] Run iteration
-            let mut dice = DiceTrait::new(game.seed, game.wave, tick);
+            let mut dice = DiceTrait::new(game.seed, game.wave, game.tick);
             let mut towers = store.towers(game);
             let mut mobs = store.mobs(game);
-            self._iter(world, player, tick, ref store, ref game, ref dice, ref towers, ref mobs);
+            self._iter(world, player, ref store, ref game, ref dice, ref towers, ref mobs);
+
+            // [Effect] Update game
+            game.tick += 1;
+            store.set_game(game);
         }
     }
 
@@ -284,67 +286,52 @@ mod actions {
             self: @ContractState,
             world: IWorldDispatcher,
             player: felt252,
-            tick: u32,
             ref store: Store,
             ref game: Game,
             ref dice: Dice,
             ref towers: Array<Tower>,
             ref mobs: Array<Mob>,
         ) {
-            // [Effect] Perform tower attacks
-            loop {
-                match towers.pop_front() {
-                    Option::Some(tower) => {
-                        let mut tower = tower;
-                        if tower.is_idle(tick) {
-                            let mut mob_index: felt252 = mobs.len().into();
-                            loop {
-                                if 0 == mob_index {
-                                    break;
-                                }
-                                mob_index -= 1;
-                                let mut mob = mobs.pop_front().unwrap();
-                                if tower.can_attack(@mob, tick) {
-                                    let damage = tower.attack(ref mob, tick);
-                                    if 0 == mob.health.into() {
-                                        game.gold += mob.reward;
-                                        game.score += 1;
-                                        game.mob_alive -= 1;
-                                        store.set_mob(mob);
-                                    } else {
-                                        mobs.append(mob);
-                                    };
-
-                                    // [Event] Hit
-                                    let hit = Hit {
-                                        game_id: game.id,
-                                        tick,
-                                        from_id: tower.id,
-                                        from_index: tower.index,
-                                        to_id: mob.id,
-                                        to_index: mob.index,
-                                        damage,
-                                    };
-                                    emit!(world, hit);
-                                } else {
-                                    mobs.append(mob);
-                                };
-                            };
-                        };
-                        store.set_tower(tower);
-                    },
-                    Option::None => {
-                        break;
-                    },
-                };
-            };
-
-            // [Effect] Perform mob moves
             loop {
                 match mobs.pop_front() {
                     Option::Some(mob) => {
                         let mut mob = mob;
-                        let status = mob.move(tick);
+
+                        // [Effect] Perform tower attacks
+                        let mut tower_index: felt252 = towers.len().into();
+                        loop {
+                            if 0 == tower_index {
+                                break;
+                            };
+                            tower_index -= 1;
+
+                            let mut tower = towers.pop_front().unwrap();
+                            if tower.can_attack(@mob, game.tick) {
+                                let damage = tower.attack(ref mob, game.tick);
+                                if 0 == mob.health.into() {
+                                    game.gold += mob.reward;
+                                    game.score += 1;
+                                    game.mob_alive -= 1;
+                                };
+
+                                // [Event] Hit
+                                let hit = Hit {
+                                    game_id: game.id,
+                                    tick: game.tick,
+                                    from_id: tower.id,
+                                    from_index: tower.index,
+                                    to_id: mob.id,
+                                    to_index: mob.index,
+                                    damage,
+                                };
+                                emit!(world, hit);
+                            };
+
+                            towers.append(tower);
+                        };
+
+                        // [Effect] Perform mob moves
+                        let status = mob.move(game.tick);
                         // [Check] Mob reached castle
                         if status {
                             game.take_damage();
@@ -359,16 +346,13 @@ mod actions {
             };
 
             // [Effect] Perform mob spawns
-            loop {
-                if 0 == game.mob_remaining.into() * dice.roll().into() {
-                    break;
-                };
+            if 0 != game.mob_remaining.into() * dice.roll().into() {
                 let mob = MobTrait::new(
                     game_id: game.id,
                     key: game.mob_count.into(),
                     id: game.mob_count.into(),
                     category: game.spawn(),
-                    tick: tick,
+                    tick: game.tick,
                     wave: game.wave
                 );
                 game.mob_count += 1;
@@ -377,14 +361,15 @@ mod actions {
                 store.set_mob(mob);
             };
 
+            // [Effect] Update towers
+            store.set_towers(towers.span());
+
             // [Effect] Update game
-            game.tick = tick;
             if 0 == game.health.into() {
                 game.over();
             } else if 0 == game.mob_alive.into() + game.mob_remaining.into() {
                 game.next();
             };
-            store.set_game(game);
         }
     }
 }

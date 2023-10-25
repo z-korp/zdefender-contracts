@@ -173,15 +173,19 @@ impl TowerImpl of TowerTrait {
 
     #[inline(always)]
     fn can_attack(self: Tower, mob: @Mob, tick: u32) -> bool {
-        let is_in_range = self.in_range(mob);
-        let is_idle = if self.is_barbarian() {
-            tick == self.tick || self.is_idle(tick)
-        } else if self.is_wizard() {
-            (tick == self.tick && self.hit == *mob.index) || self.is_idle(tick)
-        } else {
-            self.is_idle(tick)
+        if 0 == *mob.health.into() {
+            return false;
         };
-        is_in_range && is_idle
+
+        if self.is_barbarian() {
+            let condition = tick == self.tick;
+            return (condition || self.is_idle(tick)) && self.in_range(mob);
+        } else if self.is_bowman() {
+            return self.is_idle(tick) && self.in_range(mob);
+        } else {
+            let condition = tick == self.tick && self.hit == *mob.index;
+            return (condition || self.is_idle(tick)) && self.in_range(mob);
+        }
     }
 
     #[inline(always)]
@@ -390,6 +394,7 @@ mod tests {
         let mut tick = 5;
         assert(tower.can_attack(@mob, tick), 'Tower: wrong can_attack');
         tower.attack(ref mob, tick);
+        mob.health += 1; // Revive to be attackable
         assert(tower.can_attack(@mob, tick), 'Tower: wrong can_attack');
         mob.move(tick);
         assert(!tower.can_attack(@mob, tick), 'Tower: wrong can_attack');
