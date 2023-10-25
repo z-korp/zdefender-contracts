@@ -240,9 +240,10 @@ mod actions {
 
             // [Effect] Tick loop
             let mut dice = DiceTrait::new(game.seed, game.wave, game.tick);
+            let mut towers = store.towers(game);
             let wave = game.wave;
             loop {
-                let mut towers = store.towers(game);
+                game.tick += 1;
                 let mut mobs = store.mobs(game);
                 self._iter(world, player, ref store, ref game, ref dice, ref towers, ref mobs);
 
@@ -250,8 +251,10 @@ mod actions {
                 if game.health == 0 || game.wave != wave {
                     break;
                 };
-                game.tick += 1;
             };
+
+            // [Effect] Update towers
+            store.set_towers(ref towers);
 
             // [Effect] Update game
             store.set_game(game);
@@ -269,13 +272,16 @@ mod actions {
             assert(game.mob_remaining > 0 || game.mob_alive > 0, errors::ITER_INVALID_MOB_STATUS);
 
             // [Effect] Run iteration
+            game.tick += 1;
             let mut dice = DiceTrait::new(game.seed, game.wave, game.tick);
             let mut towers = store.towers(game);
             let mut mobs = store.mobs(game);
             self._iter(world, player, ref store, ref game, ref dice, ref towers, ref mobs);
 
+            // [Effect] Update towers
+            store.set_towers(ref towers);
+
             // [Effect] Update game
-            game.tick += 1;
             store.set_game(game);
         }
     }
@@ -360,9 +366,6 @@ mod actions {
                 game.mob_remaining -= 1;
                 store.set_mob(mob);
             };
-
-            // [Effect] Update towers
-            store.set_towers(towers.span());
 
             // [Effect] Update game
             if 0 == game.health.into() {

@@ -244,5 +244,4 @@ fn test_iter_multi_next_wave() {
     // [Assert] Game
     let game = store.game(ACCOUNT);
     assert(game.over, 'Game: wrong status');
-// assert(game.wave == 3, 'Game: wrong wave');
 }

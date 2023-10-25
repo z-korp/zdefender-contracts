@@ -32,10 +32,10 @@ trait StoreTrait {
     fn is_tower(ref self: Store, game: Game, index: u32) -> bool;
     fn set_game(ref self: Store, game: Game);
     fn set_mob(ref self: Store, mob: Mob);
-    fn set_mobs(ref self: Store, mobs: Span<Mob>);
+    fn set_mobs(ref self: Store, mobs: Array<Mob>);
     fn remove_mob(ref self: Store, game: Game, mob: Mob);
     fn set_tower(ref self: Store, tower: Tower);
-    fn set_towers(ref self: Store, towers: Span<Tower>);
+    fn set_towers(ref self: Store, ref towers: Array<Tower>);
     fn remove_tower(ref self: Store, game: Game, tower: Tower);
 }
 
@@ -126,10 +126,10 @@ impl StoreImpl of StoreTrait {
         set!(self.world, (mob));
     }
 
-    fn set_mobs(ref self: Store, mut mobs: Span<Mob>) {
+    fn set_mobs(ref self: Store, mut mobs: Array<Mob>) {
         loop {
             match mobs.pop_front() {
-                Option::Some(mob) => self.set_mob(*mob),
+                Option::Some(mob) => self.set_mob(mob),
                 Option::None => {
                     break;
                 },
@@ -155,10 +155,10 @@ impl StoreImpl of StoreTrait {
         set!(self.world, (tower));
     }
 
-    fn set_towers(ref self: Store, mut towers: Span<Tower>) {
+    fn set_towers(ref self: Store, ref towers: Array<Tower>) {
         loop {
             match towers.pop_front() {
-                Option::Some(tower) => self.set_tower(*tower),
+                Option::Some(tower) => self.set_tower(tower),
                 Option::None => {
                     break;
                 },
